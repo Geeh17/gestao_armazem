@@ -1,0 +1,48 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34728.123
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GestaoArmazem.Domain", "src\GestaoArmazem.Domain\GestaoArmazem.Domain.csproj", "{B854CA01-F833-415A-AC26-0D3861E6A2E4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GestaoArmazem.Application", "src\GestaoArmazem.Application\GestaoArmazem.Application.csproj", "{3F256038-F743-42EF-831B-AC5D456F6D92}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GestaoArmazem.Infrastructure", "src\GestaoArmazem.Infrastructure\GestaoArmazem.Infrastructure.csproj", "{28FE035D-0E6F-4FC7-B14B-54FC5DE587A7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GestaoArmazem.API", "src\GestaoArmazem.API\GestaoArmazem.API.csproj", "{2BB7A602-F4E7-412A-B77B-0022806D3A3D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GestaoArmazem.Application.Tests", "tests\GestaoArmazem.Application.Tests\GestaoArmazem.Application.Tests.csproj", "{F257020E-6F63-482F-B1B6-FBDB6CC893A5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B854CA01-F833-415A-AC26-0D3861E6A2E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B854CA01-F833-415A-AC26-0D3861E6A2E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B854CA01-F833-415A-AC26-0D3861E6A2E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B854CA01-F833-415A-AC26-0D3861E6A2E4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F256038-F743-42EF-831B-AC5D456F6D92}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F256038-F743-42EF-831B-AC5D456F6D92}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F256038-F743-42EF-831B-AC5D456F6D92}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F256038-F743-42EF-831B-AC5D456F6D92}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28FE035D-0E6F-4FC7-B14B-54FC5DE587A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28FE035D-0E6F-4FC7-B14B-54FC5DE587A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28FE035D-0E6F-4FC7-B14B-54FC5DE587A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28FE035D-0E6F-4FC7-B14B-54FC5DE587A7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2BB7A602-F4E7-412A-B77B-0022806D3A3D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2BB7A602-F4E7-412A-B77B-0022806D3A3D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2BB7A602-F4E7-412A-B77B-0022806D3A3D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2BB7A602-F4E7-412A-B77B-0022806D3A3D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F257020E-6F63-482F-B1B6-FBDB6CC893A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F257020E-6F63-482F-B1B6-FBDB6CC893A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F257020E-6F63-482F-B1B6-FBDB6CC893A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F257020E-6F63-482F-B1B6-FBDB6CC893A5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(SolutionGuid) = postSolution
+		SolutionGuid = {8D6B272A-2568-47D9-A601-6604D93AC385}
+	EndGlobalSection
+EndGlobal
