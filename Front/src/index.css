@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  /* Paleta: navy industrial (herdado da identidade dos documentos do projeto)
+     + âmbar de sinalização de armazém como acento funcional. */
+  --color-ink: #1c1e24;
+  --color-surface: #f5f6f7;
+  --color-surface-raised: #ffffff;
+  --color-border: #e2e4e8;
+
+  --color-brand: #1f3864;
+  --color-brand-dark: #16294b;
+  --color-brand-light: #2e4c82;
+
+  --color-accent: #e8a33d;
+  --color-accent-dark: #c77f1f;
+
+  --color-success: #2f9e44;
+  --color-success-surface: #eaf7ed;
+  --color-danger: #d64545;
+  --color-danger-surface: #fbeaea;
+  --color-muted: #6b7280;
+
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+}
+
+@layer base {
+  body {
+    @apply bg-surface text-ink font-sans antialiased;
+  }
+
+  /* Foco de teclado visível em qualquer elemento interativo - acessibilidade,
+     nao decoracao. */
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  /* Dado tecnico (SKU, codigo de barras, quantidade, Id): sempre monoespacado,
+     como em qualquer sistema real de armazem/ERP - reforca escaneabilidade
+     em tabelas densas e e a assinatura visual do produto. */
+  .font-data {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
