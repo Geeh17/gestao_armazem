@@ -32,6 +32,8 @@ public static class DependencyInjection
         services.AddScoped<IPerfilRepository, PerfilRepository>();
         services.AddScoped<IFornecedorRepository, FornecedorRepository>();
         services.AddScoped<IPedidoRecebimentoRepository, PedidoRecebimentoRepository>();
+        services.AddScoped<IClienteRepository, ClienteRepository>();
+        services.AddScoped<IPedidoExpedicaoRepository, PedidoExpedicaoRepository>();
 
         services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
