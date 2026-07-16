@@ -49,7 +49,23 @@ dotnet test tests/GestaoArmazem.Application.Tests
 - **RN01** — saída/transferência não pode resultar em saldo negativo (validado atomicamente no `UPDATE` do `EstoqueRepository`, reforçado por `CHECK` no banco).
 - **RN02** — movimentações de estoque são somente-inserção (log auditável imutável).
 - **RN03** — SKU de produto é único (validado na Application e reforçado por `UNIQUE` no banco).
+- **RN05** — pedido de recebimento só é encerrado quando todos os itens forem totalmente recebidos.
 - **RN08** — transferência debita origem e credita destino na mesma transação (`IUnitOfWork`).
+
+## Pedidos de Recebimento
+
+`POST /api/pedidos-recebimento` cria um pedido (Fornecedor + itens esperados), status inicial `Pendente`.
+
+`POST /api/pedidos-recebimento/{id}/itens/{itemId}/confirmar-recebimento` confirma o recebimento
+(total ou parcial) de um item: dá entrada no estoque via `MovimentacaoService` (mesma regra de
+negócio usada pelo endpoint de entrada manual) e atualiza a quantidade recebida. Quando todos os
+itens do pedido atingem a quantidade esperada, o pedido muda para `Concluido` automaticamente (RN05).
+Enquanto isso não acontece, o pedido fica `EmAndamento`.
+
+> Observação de implementação: a inserção de pedido+itens é atômica (transação local no
+> repositório). Já a confirmação de item (entrada em estoque + atualização do pedido) é
+> executada em passos sequenciais, não em uma única transação distribuída — suficiente para
+> esta fase, mas um ponto a revisar se for necessário garantir atomicidade total no futuro.
 
 ## Autenticação
 
@@ -65,9 +81,10 @@ Senhas são armazenadas com hash bcrypt (`BCrypt.Net-Next`). **Nunca reutilize a
 ## Status
 
 Fatia vertical de referência implementada: **Produtos**, **Estoque**, **Movimentações**
-(entrada, saída, transferência) e **Autenticação (login + JWT)**, ponta a ponta —
+(entrada, saída, transferência), **Autenticação (login + JWT)** e **Pedidos de Recebimento**
+(criação + confirmação de recebimento com entrada automática em estoque), ponta a ponta —
 Domain → Application → Infrastructure → API, com testes unitários das regras de negócio críticas.
 
-Próximos passos: Pedidos de Recebimento/Expedição, DbUp para aplicar os scripts
+Próximos passos: Pedidos de Expedição, DbUp para aplicar os scripts
 automaticamente, e o front-end em TypeScript + Tailwind.
 
