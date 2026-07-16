@@ -24,19 +24,21 @@ src/
 ├── GestaoArmazem.Application     # DTOs, validators, serviços (casos de uso)
 ├── GestaoArmazem.Infrastructure  # Repositórios Dapper, conexão com o banco
 ├── GestaoArmazem.API             # Controllers, Program.cs, configuração
-└── database/scripts              # Scripts SQL versionados
+├── GestaoArmazem.Database        # Runner DbUp: aplica os scripts SQL (manual ou automático)
+└── database/scripts              # Scripts SQL versionados (fonte única de verdade)
 tests/
 └── GestaoArmazem.Application.Tests
 ```
 
 ## Como rodar
 
-1. Suba um SQL Server local (ou use uma instância existente) e crie o banco `GestaoArmazem_Dev`.
-2. Execute os scripts em `src/database/scripts` na ordem numérica (veja o README da pasta).
-3. Ajuste a connection string em `src/GestaoArmazem.API/appsettings.Development.json` se necessário.
-4. Abra `GestaoArmazem.sln` no Visual Studio 2026 e rode o projeto `GestaoArmazem.API`
+1. Suba um SQL Server local (ou use uma instância existente).
+2. Ajuste a connection string em `src/GestaoArmazem.API/appsettings.Development.json` se necessário.
+3. Abra `GestaoArmazem.sln` no Visual Studio 2026 e rode o projeto `GestaoArmazem.API`
    (ou `dotnet run --project src/GestaoArmazem.API`).
-5. A API sobe com Swagger em `/swagger` no ambiente de desenvolvimento.
+   O banco `GestaoArmazem_Dev` é criado e os scripts SQL são aplicados **automaticamente**
+   nesse momento (veja `src/database/README.md` para detalhes e para rodar isso manualmente).
+4. A API sobe com Swagger em `/swagger` no ambiente de desenvolvimento.
 
 ## Rodando os testes
 
@@ -98,8 +100,8 @@ Senhas são armazenadas com hash bcrypt (`BCrypt.Net-Next`). **Nunca reutilize a
 Fatia vertical de referência implementada: **Produtos**, **Estoque**, **Movimentações**
 (entrada, saída, transferência), **Autenticação (login + JWT)**, **Pedidos de Recebimento**
 e **Pedidos de Expedição**, ponta a ponta — Domain → Application → Infrastructure → API,
-com testes unitários das regras de negócio críticas.
+com testes unitários das regras de negócio críticas. Schema do banco aplicado
+automaticamente via DbUp (`GestaoArmazem.Database`).
 
-Próximos passos: DbUp para aplicar os scripts SQL automaticamente, e o front-end em
-TypeScript + Tailwind.
+Próximo passo: o front-end em TypeScript + Tailwind.
 

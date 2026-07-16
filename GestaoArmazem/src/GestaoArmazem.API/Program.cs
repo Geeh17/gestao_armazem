@@ -66,6 +66,16 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Em Development, aplica automaticamente os scripts SQL pendentes (DbUp) antes de
+// subir a API — evita o passo manual de rodar o migrator à parte a cada mudança de schema.
+// Controlado por "Database:AutoMigrate" no appsettings (default: true em Development).
+if (app.Environment.IsDevelopment() && builder.Configuration.GetValue("Database:AutoMigrate", true))
+{
+    var connectionString = builder.Configuration.GetConnectionString("GestaoArmazem")!;
+    GestaoArmazem.Database.DatabaseMigrator.EnsureDatabaseCreated(connectionString);
+    GestaoArmazem.Database.DatabaseMigrator.EnsureDatabaseUpToDate(connectionString);
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

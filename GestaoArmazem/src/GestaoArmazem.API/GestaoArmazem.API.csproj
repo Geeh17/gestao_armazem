@@ -15,6 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\GestaoArmazem.Application\GestaoArmazem.Application.csproj" />
     <ProjectReference Include="..\GestaoArmazem.Infrastructure\GestaoArmazem.Infrastructure.csproj" />
+    <ProjectReference Include="..\GestaoArmazem.Database\GestaoArmazem.Database.csproj" />
   </ItemGroup>
 
 </Project>

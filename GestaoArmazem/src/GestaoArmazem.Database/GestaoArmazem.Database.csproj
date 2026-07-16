@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>GestaoArmazem.Database</RootNamespace>
+    <!-- Este projeto é ao mesmo tempo uma ferramenta de linha de comando (dotnet run)
+         e uma biblioteca reaproveitada pela API para auto-aplicar scripts em Development. -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="dbup-sqlserver" Version="5.0.37" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Os scripts continuam com o schema em src/database/scripts (fonte única de verdade);
+         aqui só embutimos como recursos do assembly para o DbUp conseguir lê-los. -->
+    <EmbeddedResource Include="..\database\scripts\*.sql">
+      <Link>Scripts\%(Filename)%(Extension)</Link>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>
