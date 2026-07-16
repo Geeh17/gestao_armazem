@@ -8,6 +8,8 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { to: "/produtos", label: "Produtos", icon: "📦" },
+  { to: "/estoque", label: "Estoque", icon: "📊" },
+  { to: "/movimentacoes", label: "Movimentações", icon: "🔄" },
 ];
 
 export function Sidebar() {
@@ -43,7 +45,7 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t border-white/10 px-5 py-4 text-xs text-white/50">
-        v0.1 · fatia Produtos
+        v0.2 · Produtos, Estoque e Movimentações
       </div>
     </aside>
   );

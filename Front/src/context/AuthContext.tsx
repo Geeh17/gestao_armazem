@@ -1,9 +1,11 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { login as loginRequest } from "@/api/auth";
 import { clearToken, getToken, setToken } from "@/api/client";
+import { decodeJwt } from "@/lib/jwt";
 
 interface AuthContextValue {
   isAuthenticated: boolean;
+  usuarioId: string | null;
   login: (email: string, senha: string) => Promise<void>;
   logout: () => void;
 }
@@ -24,10 +26,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTokenState(null);
   }, []);
 
-  const value = useMemo<AuthContextValue>(
-    () => ({ isAuthenticated: token !== null, login, logout }),
-    [token, login, logout],
-  );
+  const value = useMemo<AuthContextValue>(() => {
+    const usuarioId = token ? (decodeJwt(token)?.sub ?? null) : null;
+    return { isAuthenticated: token !== null, usuarioId, login, logout };
+  }, [token, login, logout]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

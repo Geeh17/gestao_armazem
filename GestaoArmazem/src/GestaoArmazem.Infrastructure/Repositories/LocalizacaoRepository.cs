@@ -24,6 +24,10 @@ public class LocalizacaoRepository : ILocalizacaoRepository
             "SELECT * FROM Localizacao WHERE ArmazemId = @ArmazemId ORDER BY Codigo",
             new { ArmazemId = armazemId }, _sql.Transaction);
 
+    public Task<IEnumerable<Localizacao>> ListarTodasAsync() =>
+        _sql.Connection.QueryAsync<Localizacao>(
+            "SELECT * FROM Localizacao ORDER BY Codigo", transaction: _sql.Transaction);
+
     public async Task<Guid> CriarAsync(Localizacao localizacao)
     {
         const string sql = @"
