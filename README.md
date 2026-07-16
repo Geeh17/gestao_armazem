@@ -51,12 +51,23 @@ dotnet test tests/GestaoArmazem.Application.Tests
 - **RN03** — SKU de produto é único (validado na Application e reforçado por `UNIQUE` no banco).
 - **RN08** — transferência debita origem e credita destino na mesma transação (`IUnitOfWork`).
 
+## Autenticação
+
+`POST /api/auth/login` recebe `{ "email": "...", "senha": "..." }` e retorna um token JWT.
+Use o token no header `Authorization: Bearer {token}` para acessar os demais endpoints (todos protegidos com `[Authorize]`).
+
+Usuário de desenvolvimento (criado pelo seed `0002_SeedData.sql`):
+- Email: `admin@gestaoarmazem.local`
+- Senha: `Admin@123`
+
+Senhas são armazenadas com hash bcrypt (`BCrypt.Net-Next`). **Nunca reutilize a `SecretKey` de exemplo do `appsettings.json` em produção.**
+
 ## Status
 
-Fatia vertical de referência implementada: **Produtos**, **Estoque** e **Movimentações**
-(entrada, saída, transferência), ponta a ponta — Domain → Application → Infrastructure → API,
-com testes unitários das regras de negócio críticas.
+Fatia vertical de referência implementada: **Produtos**, **Estoque**, **Movimentações**
+(entrada, saída, transferência) e **Autenticação (login + JWT)**, ponta a ponta —
+Domain → Application → Infrastructure → API, com testes unitários das regras de negócio críticas.
 
-Próximos passos: Pedidos de Recebimento/Expedição, autenticação real (emissão de token),
-DbUp para aplicar os scripts automaticamente, e o front-end em TypeScript + Tailwind.
+Próximos passos: Pedidos de Recebimento/Expedição, DbUp para aplicar os scripts
+automaticamente, e o front-end em TypeScript + Tailwind.
 

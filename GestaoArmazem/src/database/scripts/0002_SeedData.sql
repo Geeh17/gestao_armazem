@@ -6,6 +6,13 @@ INSERT INTO Perfil (Id, Nome) VALUES
     (NEWID(), 'Gestor de Estoque'),
     (NEWID(), 'Operador de Armazem');
 
+-- Usuário administrador para desenvolvimento.
+-- Senha: Admin@123 (hash bcrypt abaixo). Troque em qualquer ambiente que não seja local.
+DECLARE @PerfilAdminId UNIQUEIDENTIFIER = (SELECT TOP 1 Id FROM Perfil WHERE Nome = 'Administrador');
+INSERT INTO Usuario (Id, Nome, Email, SenhaHash, PerfilId) VALUES
+    (NEWID(), 'Administrador', 'admin@gestaoarmazem.local',
+     '$2b$11$hn/1eMquxYXQ8zYJF8mFB.MnHIPxt.VaU2pu7Lf3jEAseJxL.vGQi', @PerfilAdminId);
+
 INSERT INTO Categoria (Id, Nome) VALUES
     (NEWID(), 'Geral'),
     (NEWID(), 'Eletronicos'),
