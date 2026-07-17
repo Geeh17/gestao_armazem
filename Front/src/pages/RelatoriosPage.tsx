@@ -8,7 +8,9 @@ import {
 } from "@/api/relatorios";
 import { listarProdutos } from "@/api/produtos";
 import { listarLocalizacoes, type Localizacao } from "@/api/localizacoes";
+import { listarArmazens, type Armazem } from "@/api/armazens";
 import { ApiError } from "@/api/client";
+import { formatarLocalizacao } from "@/lib/localizacao";
 import type { Produto } from "@/types/produto";
 import { Select } from "@/components/ui/Select";
 import { Input } from "@/components/ui/Input";
@@ -111,6 +113,7 @@ function EstoqueBaixoTab() {
 function MovimentacoesTab() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [localizacoes, setLocalizacoes] = useState<Localizacao[]>([]);
+  const [armazens, setArmazens] = useState<Armazem[]>([]);
   const [produtoId, setProdutoId] = useState("");
   const [tipo, setTipo] = useState("");
   const [dataInicio, setDataInicio] = useState("");
@@ -121,10 +124,13 @@ function MovimentacoesTab() {
   const [consultando, setConsultando] = useState(false);
 
   useEffect(() => {
-    Promise.all([listarProdutos(), listarLocalizacoes()]).then(([produtosData, localizacoesData]) => {
-      setProdutos(produtosData);
-      setLocalizacoes(localizacoesData);
-    });
+    Promise.all([listarProdutos(), listarLocalizacoes(), listarArmazens()]).then(
+      ([produtosData, localizacoesData, armazensData]) => {
+        setProdutos(produtosData);
+        setLocalizacoes(localizacoesData);
+        setArmazens(armazensData);
+      },
+    );
     consultar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -132,11 +138,6 @@ function MovimentacoesTab() {
   function produtoLabel(id: string): string {
     const produto = produtos.find((p) => p.id === id);
     return produto ? `${produto.nome} (${produto.sku})` : id;
-  }
-
-  function localizacaoLabel(id: string | null): string {
-    if (!id) return "—";
-    return localizacoes.find((l) => l.id === id)?.codigo ?? id;
   }
 
   function consultar() {
@@ -218,10 +219,10 @@ function MovimentacoesTab() {
                   <td className="px-4 py-3 text-ink">{mov.tipo}</td>
                   <td className="px-4 py-3 text-ink">{produtoLabel(mov.produtoId)}</td>
                   <td className="px-4 py-3 font-data text-muted">
-                    {localizacaoLabel(mov.localizacaoOrigemId)}
+                    {formatarLocalizacao(mov.localizacaoOrigemId, localizacoes, armazens)}
                   </td>
                   <td className="px-4 py-3 font-data text-muted">
-                    {localizacaoLabel(mov.localizacaoDestinoId)}
+                    {formatarLocalizacao(mov.localizacaoDestinoId, localizacoes, armazens)}
                   </td>
                   <td className="px-4 py-3 font-data text-ink">{mov.quantidade}</td>
                 </tr>

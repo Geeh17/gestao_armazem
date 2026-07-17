@@ -7,3 +7,10 @@ public record LocalizacaoDto(
     string Prateleira,
     string Nivel,
     string Codigo);
+
+public record CriarLocalizacaoDto(
+    Guid ArmazemId,
+    string Corredor,
+    string Prateleira,
+    string Nivel,
+    string Codigo);

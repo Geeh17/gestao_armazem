@@ -17,6 +17,8 @@ import { PedidosExpedicaoListPage } from "@/pages/PedidosExpedicaoListPage";
 import { PedidoExpedicaoFormPage } from "@/pages/PedidoExpedicaoFormPage";
 import { PedidoExpedicaoDetailPage } from "@/pages/PedidoExpedicaoDetailPage";
 import { RelatoriosPage } from "@/pages/RelatoriosPage";
+import { ArmazensPage } from "@/pages/ArmazensPage";
+import { LocalizacoesPage } from "@/pages/LocalizacoesPage";
 
 export default function App() {
   return (
@@ -40,6 +42,8 @@ export default function App() {
             <Route path="/pedidos-expedicao/novo" element={<PedidoExpedicaoFormPage />} />
             <Route path="/pedidos-expedicao/:id" element={<PedidoExpedicaoDetailPage />} />
             <Route path="/relatorios" element={<RelatoriosPage />} />
+            <Route path="/armazens" element={<ArmazensPage />} />
+            <Route path="/localizacoes" element={<LocalizacoesPage />} />
           </Route>
         </Route>
 

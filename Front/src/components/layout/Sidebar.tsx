@@ -9,6 +9,8 @@ interface NavItem {
 const navItems: NavItem[] = [
   { to: "/", label: "Visão geral", icon: "🏠" },
   { to: "/produtos", label: "Produtos", icon: "📦" },
+  { to: "/armazens", label: "Armazéns", icon: "🏢" },
+  { to: "/localizacoes", label: "Localizações", icon: "📍" },
   { to: "/estoque", label: "Estoque", icon: "📊" },
   { to: "/movimentacoes", label: "Movimentações", icon: "🔄" },
   { to: "/fornecedores", label: "Fornecedores", icon: "🏭" },
@@ -52,7 +54,7 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t border-white/10 px-5 py-4 text-xs text-white/50">
-        v0.4 · Relatórios
+        v0.5 · Múltiplos armazéns
       </div>
     </aside>
   );

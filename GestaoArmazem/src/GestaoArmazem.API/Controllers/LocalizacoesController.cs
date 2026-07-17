@@ -22,4 +22,11 @@ public class LocalizacoesController : ControllerBase
     {
         return Ok(await _localizacaoService.ListarAsync());
     }
+
+    [HttpPost]
+    public async Task<ActionResult<LocalizacaoDto>> Criar([FromBody] CriarLocalizacaoDto dto)
+    {
+        var localizacao = await _localizacaoService.CriarAsync(dto);
+        return CreatedAtAction(nameof(Listar), localizacao);
+    }
 }

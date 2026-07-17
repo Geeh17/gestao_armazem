@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { listarProdutos } from "@/api/produtos";
 import { listarLocalizacoes, type Localizacao } from "@/api/localizacoes";
+import { listarArmazens, type Armazem } from "@/api/armazens";
 import { registrarEntrada, registrarSaida, registrarTransferencia } from "@/api/movimentacoes";
 import { ApiError } from "@/api/client";
 import { useAuth } from "@/context/AuthContext";
@@ -24,6 +25,7 @@ export function MovimentacoesPage() {
 
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [localizacoes, setLocalizacoes] = useState<Localizacao[]>([]);
+  const [armazens, setArmazens] = useState<Armazem[]>([]);
 
   const [produtoId, setProdutoId] = useState("");
   const [localizacaoId, setLocalizacaoId] = useState("");
@@ -36,10 +38,11 @@ export function MovimentacoesPage() {
   const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
-    Promise.all([listarProdutos(), listarLocalizacoes()])
-      .then(([produtosData, localizacoesData]) => {
+    Promise.all([listarProdutos(), listarLocalizacoes(), listarArmazens()])
+      .then(([produtosData, localizacoesData, armazensData]) => {
         setProdutos(produtosData);
         setLocalizacoes(localizacoesData);
+        setArmazens(armazensData);
         if (produtosData.length > 0) setProdutoId(produtosData[0].id);
         if (localizacoesData.length > 0) {
           setLocalizacaoId(localizacoesData[0].id);
@@ -103,13 +106,17 @@ export function MovimentacoesPage() {
     </Select>
   );
 
+  function nomeArmazem(armazemId: string): string {
+    return armazens.find((a) => a.id === armazemId)?.nome ?? "";
+  }
+
   function localizacaoOptions() {
     if (localizacoes.length === 0) {
       return <option value="">Nenhuma localização cadastrada</option>;
     }
     return localizacoes.map((localizacao) => (
       <option key={localizacao.id} value={localizacao.id}>
-        {localizacao.codigo}
+        {nomeArmazem(localizacao.armazemId)} - {localizacao.codigo}
       </option>
     ));
   }

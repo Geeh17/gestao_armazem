@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { listarProdutos } from "@/api/produtos";
 import { listarLocalizacoes, type Localizacao } from "@/api/localizacoes";
+import { listarArmazens, type Armazem } from "@/api/armazens";
 import { consultarEstoquePorProduto, type SaldoEstoque } from "@/api/estoque";
 import { ApiError } from "@/api/client";
+import { formatarLocalizacao } from "@/lib/localizacao";
 import type { Produto } from "@/types/produto";
 import { Select } from "@/components/ui/Select";
 import { Alert } from "@/components/ui/Alert";
@@ -10,16 +12,18 @@ import { Alert } from "@/components/ui/Alert";
 export function EstoquePage() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [localizacoes, setLocalizacoes] = useState<Localizacao[]>([]);
+  const [armazens, setArmazens] = useState<Armazem[]>([]);
   const [produtoId, setProdutoId] = useState("");
   const [saldos, setSaldos] = useState<SaldoEstoque[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [consultando, setConsultando] = useState(false);
 
   useEffect(() => {
-    Promise.all([listarProdutos(), listarLocalizacoes()])
-      .then(([produtosData, localizacoesData]) => {
+    Promise.all([listarProdutos(), listarLocalizacoes(), listarArmazens()])
+      .then(([produtosData, localizacoesData, armazensData]) => {
         setProdutos(produtosData);
         setLocalizacoes(localizacoesData);
+        setArmazens(armazensData);
         if (produtosData.length > 0) setProdutoId(produtosData[0].id);
       })
       .catch(() => setErro("Não foi possível carregar produtos e localizações."));
@@ -36,10 +40,6 @@ export function EstoquePage() {
       .catch((err) => setErro(err instanceof ApiError ? err.message : "Erro ao consultar o estoque."))
       .finally(() => setConsultando(false));
   }, [produtoId]);
-
-  function codigoDaLocalizacao(localizacaoId: string): string {
-    return localizacoes.find((l) => l.id === localizacaoId)?.codigo ?? localizacaoId;
-  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -85,7 +85,7 @@ export function EstoquePage() {
               {saldos.map((saldo) => (
                 <tr key={saldo.localizacaoId} className="hover:bg-surface">
                   <td className="px-4 py-3 font-data text-ink">
-                    {codigoDaLocalizacao(saldo.localizacaoId)}
+                    {formatarLocalizacao(saldo.localizacaoId, localizacoes, armazens)}
                   </td>
                   <td className="px-4 py-3 font-data text-ink">{saldo.quantidade}</td>
                 </tr>

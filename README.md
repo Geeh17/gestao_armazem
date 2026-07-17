@@ -149,7 +149,9 @@ transferência), Autenticação, Pedidos de Recebimento e Pedidos de Expedição
 críticas. Schema do banco aplicado automaticamente via DbUp.
 
 **Front-end**: cobre todo o núcleo do backend — Login, Dashboard (visão geral), Produtos,
-Estoque, Movimentações, Fornecedores, Clientes, Pedidos de Recebimento, Pedidos de Expedição
-e Relatórios (estoque baixo + histórico de movimentações filtrável).
+Armazéns, Localizações, Estoque, Movimentações, Fornecedores, Clientes, Pedidos de Recebimento,
+Pedidos de Expedição e Relatórios (estoque baixo + histórico de movimentações filtrável).
+Suporta múltiplos armazéns: toda tela que mostra ou seleciona uma localização exibe também
+o nome do armazém, já que o código de uma localização só é único dentro do próprio armazém.
 
-Próximos passos possíveis: múltiplos armazéns, permissões por perfil de usuário no front, deploy.
+Próximos passos possíveis: permissões por perfil de usuário no front, deploy.

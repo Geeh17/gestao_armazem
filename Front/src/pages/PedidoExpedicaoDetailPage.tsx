@@ -4,6 +4,7 @@ import { expedirPedido, obterPedidoExpedicao, type PedidoExpedicao } from "@/api
 import { listarClientes, type Cliente } from "@/api/clientes";
 import { listarProdutos } from "@/api/produtos";
 import { listarLocalizacoes, type Localizacao } from "@/api/localizacoes";
+import { listarArmazens, type Armazem } from "@/api/armazens";
 import { ApiError } from "@/api/client";
 import { useAuth } from "@/context/AuthContext";
 import type { Produto } from "@/types/produto";
@@ -20,6 +21,7 @@ export function PedidoExpedicaoDetailPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [localizacoes, setLocalizacoes] = useState<Localizacao[]>([]);
+  const [armazens, setArmazens] = useState<Armazem[]>([]);
   const [localizacaoPorItem, setLocalizacaoPorItem] = useState<Record<string, string>>({});
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState<string | null>(null);
@@ -32,15 +34,22 @@ export function PedidoExpedicaoDetailPage() {
 
   useEffect(() => {
     carregarPedido();
-    Promise.all([listarClientes(), listarProdutos(), listarLocalizacoes()]).then(
-      ([clientesData, produtosData, localizacoesData]) => {
+    Promise.all([listarClientes(), listarProdutos(), listarLocalizacoes(), listarArmazens()]).then(
+      ([clientesData, produtosData, localizacoesData, armazensData]) => {
         setClientes(clientesData);
         setProdutos(produtosData);
         setLocalizacoes(localizacoesData);
+        setArmazens(armazensData);
       },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  function nomeArmazemDaLocalizacao(localizacaoId: string): string {
+    const localizacao = localizacoes.find((l) => l.id === localizacaoId);
+    if (!localizacao) return "";
+    return armazens.find((a) => a.id === localizacao.armazemId)?.nome ?? "";
+  }
 
   function nomeCliente(clienteId: string): string {
     return clientes.find((c) => c.id === clienteId)?.nome ?? clienteId;
@@ -149,7 +158,7 @@ export function PedidoExpedicaoDetailPage() {
                       >
                         {localizacoes.map((localizacao) => (
                           <option key={localizacao.id} value={localizacao.id}>
-                            {localizacao.codigo}
+                            {nomeArmazemDaLocalizacao(localizacao.id)} - {localizacao.codigo}
                           </option>
                         ))}
                       </Select>

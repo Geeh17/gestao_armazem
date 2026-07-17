@@ -8,6 +8,7 @@ import {
 import { listarFornecedores, type Fornecedor } from "@/api/fornecedores";
 import { listarProdutos } from "@/api/produtos";
 import { listarLocalizacoes, type Localizacao } from "@/api/localizacoes";
+import { listarArmazens, type Armazem } from "@/api/armazens";
 import { ApiError } from "@/api/client";
 import { useAuth } from "@/context/AuthContext";
 import type { Produto } from "@/types/produto";
@@ -25,6 +26,7 @@ export function PedidoRecebimentoDetailPage() {
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [localizacoes, setLocalizacoes] = useState<Localizacao[]>([]);
+  const [armazens, setArmazens] = useState<Armazem[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState<string | null>(null);
 
@@ -39,15 +41,22 @@ export function PedidoRecebimentoDetailPage() {
 
   useEffect(() => {
     carregarPedido();
-    Promise.all([listarFornecedores(), listarProdutos(), listarLocalizacoes()]).then(
-      ([fornecedoresData, produtosData, localizacoesData]) => {
+    Promise.all([listarFornecedores(), listarProdutos(), listarLocalizacoes(), listarArmazens()]).then(
+      ([fornecedoresData, produtosData, localizacoesData, armazensData]) => {
         setFornecedores(fornecedoresData);
         setProdutos(produtosData);
         setLocalizacoes(localizacoesData);
+        setArmazens(armazensData);
       },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  function nomeArmazemDaLocalizacao(localizacaoId: string): string {
+    const localizacao = localizacoes.find((l) => l.id === localizacaoId);
+    if (!localizacao) return "";
+    return armazens.find((a) => a.id === localizacao.armazemId)?.nome ?? "";
+  }
 
   function nomeFornecedor(fornecedorId: string): string {
     return fornecedores.find((f) => f.id === fornecedorId)?.nome ?? fornecedorId;
@@ -170,7 +179,7 @@ export function PedidoRecebimentoDetailPage() {
                             >
                               {localizacoes.map((localizacao) => (
                                 <option key={localizacao.id} value={localizacao.id}>
-                                  {localizacao.codigo}
+                                  {nomeArmazemDaLocalizacao(localizacao.id)} - {localizacao.codigo}
                                 </option>
                               ))}
                             </Select>
