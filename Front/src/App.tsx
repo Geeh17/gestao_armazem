@@ -7,6 +7,14 @@ import { ProdutosListPage } from "@/pages/ProdutosListPage";
 import { ProdutoFormPage } from "@/pages/ProdutoFormPage";
 import { EstoquePage } from "@/pages/EstoquePage";
 import { MovimentacoesPage } from "@/pages/MovimentacoesPage";
+import { FornecedoresPage } from "@/pages/FornecedoresPage";
+import { ClientesPage } from "@/pages/ClientesPage";
+import { PedidosRecebimentoListPage } from "@/pages/PedidosRecebimentoListPage";
+import { PedidoRecebimentoFormPage } from "@/pages/PedidoRecebimentoFormPage";
+import { PedidoRecebimentoDetailPage } from "@/pages/PedidoRecebimentoDetailPage";
+import { PedidosExpedicaoListPage } from "@/pages/PedidosExpedicaoListPage";
+import { PedidoExpedicaoFormPage } from "@/pages/PedidoExpedicaoFormPage";
+import { PedidoExpedicaoDetailPage } from "@/pages/PedidoExpedicaoDetailPage";
 
 export default function App() {
   return (
@@ -20,6 +28,14 @@ export default function App() {
             <Route path="/produtos/novo" element={<ProdutoFormPage />} />
             <Route path="/estoque" element={<EstoquePage />} />
             <Route path="/movimentacoes" element={<MovimentacoesPage />} />
+            <Route path="/fornecedores" element={<FornecedoresPage />} />
+            <Route path="/clientes" element={<ClientesPage />} />
+            <Route path="/pedidos-recebimento" element={<PedidosRecebimentoListPage />} />
+            <Route path="/pedidos-recebimento/novo" element={<PedidoRecebimentoFormPage />} />
+            <Route path="/pedidos-recebimento/:id" element={<PedidoRecebimentoDetailPage />} />
+            <Route path="/pedidos-expedicao" element={<PedidosExpedicaoListPage />} />
+            <Route path="/pedidos-expedicao/novo" element={<PedidoExpedicaoFormPage />} />
+            <Route path="/pedidos-expedicao/:id" element={<PedidoExpedicaoDetailPage />} />
             <Route path="/" element={<Navigate to="/produtos" replace />} />
           </Route>
         </Route>

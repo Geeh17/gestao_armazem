@@ -68,6 +68,7 @@ em toda chamada autenticada (`src/api/client.ts`). Rotas fora de `/login` exigem
 
 ## Status
 
-Fatia vertical implementada: **Login** e **Produtos** (listar + criar). As demais
-telas (Estoque, Movimentações, Pedidos de Recebimento/Expedição) seguem o mesmo padrão
-de `api/` + `pages/` e podem ser adicionadas incrementalmente.
+Fatia vertical implementada: **Login**, **Produtos**, **Estoque**, **Movimentações**,
+**Fornecedores**, **Clientes**, **Pedidos de Recebimento** (criar + confirmar recebimento
+por item) e **Pedidos de Expedição** (criar + expedir o pedido inteiro de uma vez, RN06).
+Cobre todo o núcleo funcional do backend.

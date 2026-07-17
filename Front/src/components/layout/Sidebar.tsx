@@ -10,6 +10,10 @@ const navItems: NavItem[] = [
   { to: "/produtos", label: "Produtos", icon: "📦" },
   { to: "/estoque", label: "Estoque", icon: "📊" },
   { to: "/movimentacoes", label: "Movimentações", icon: "🔄" },
+  { to: "/fornecedores", label: "Fornecedores", icon: "🏭" },
+  { to: "/pedidos-recebimento", label: "Pedidos de Recebimento", icon: "📥" },
+  { to: "/clientes", label: "Clientes", icon: "🧾" },
+  { to: "/pedidos-expedicao", label: "Pedidos de Expedição", icon: "📤" },
 ];
 
 export function Sidebar() {
@@ -45,7 +49,7 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t border-white/10 px-5 py-4 text-xs text-white/50">
-        v0.2 · Produtos, Estoque e Movimentações
+        v0.3 · Pedidos de Recebimento e Expedição
       </div>
     </aside>
   );
