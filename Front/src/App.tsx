@@ -3,6 +3,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import { AppShell } from "@/components/layout/AppShell";
 import { LoginPage } from "@/pages/LoginPage";
+import { DashboardPage } from "@/pages/DashboardPage";
 import { ProdutosListPage } from "@/pages/ProdutosListPage";
 import { ProdutoFormPage } from "@/pages/ProdutoFormPage";
 import { EstoquePage } from "@/pages/EstoquePage";
@@ -24,6 +25,7 @@ export default function App() {
 
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
+            <Route path="/" element={<DashboardPage />} />
             <Route path="/produtos" element={<ProdutosListPage />} />
             <Route path="/produtos/novo" element={<ProdutoFormPage />} />
             <Route path="/estoque" element={<EstoquePage />} />
@@ -36,11 +38,10 @@ export default function App() {
             <Route path="/pedidos-expedicao" element={<PedidosExpedicaoListPage />} />
             <Route path="/pedidos-expedicao/novo" element={<PedidoExpedicaoFormPage />} />
             <Route path="/pedidos-expedicao/:id" element={<PedidoExpedicaoDetailPage />} />
-            <Route path="/" element={<Navigate to="/produtos" replace />} />
           </Route>
         </Route>
 
-        <Route path="*" element={<Navigate to="/produtos" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>
   );

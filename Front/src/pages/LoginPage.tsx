@@ -22,7 +22,7 @@ export function LoginPage() {
 
     try {
       await login(email, senha);
-      navigate("/produtos", { replace: true });
+      navigate("/", { replace: true });
     } catch (err) {
       setErro(err instanceof ApiError ? err.message : "Não foi possível conectar à API.");
     } finally {

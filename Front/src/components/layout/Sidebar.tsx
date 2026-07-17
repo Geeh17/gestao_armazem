@@ -7,6 +7,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
+  { to: "/", label: "Visão geral", icon: "🏠" },
   { to: "/produtos", label: "Produtos", icon: "📦" },
   { to: "/estoque", label: "Estoque", icon: "📊" },
   { to: "/movimentacoes", label: "Movimentações", icon: "🔄" },
@@ -34,6 +35,7 @@ export function Sidebar() {
           <NavLink
             key={item.to}
             to={item.to}
+            end={item.to === "/"}
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                 isActive
