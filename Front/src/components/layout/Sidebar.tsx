@@ -15,6 +15,7 @@ const navItems: NavItem[] = [
   { to: "/pedidos-recebimento", label: "Pedidos de Recebimento", icon: "📥" },
   { to: "/clientes", label: "Clientes", icon: "🧾" },
   { to: "/pedidos-expedicao", label: "Pedidos de Expedição", icon: "📤" },
+  { to: "/relatorios", label: "Relatórios", icon: "📈" },
 ];
 
 export function Sidebar() {
@@ -51,7 +52,7 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t border-white/10 px-5 py-4 text-xs text-white/50">
-        v0.3 · Pedidos de Recebimento e Expedição
+        v0.4 · Relatórios
       </div>
     </aside>
   );

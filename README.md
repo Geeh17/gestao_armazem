@@ -98,6 +98,16 @@ exceto o login, exigem esse token (`[Authorize]`).
 Senhas são armazenadas com hash bcrypt (`BCrypt.Net-Next`). **Nunca reutilize a `SecretKey`
 de exemplo do `appsettings.json` em produção.**
 
+## Relatórios
+
+- `GET /api/relatorios/estoque-baixo` — produtos cujo saldo total (somado em todas as
+  localizações) está abaixo do estoque mínimo cadastrado.
+- `GET /api/relatorios/movimentacoes` — histórico de movimentações com filtros opcionais
+  (`produtoId`, `tipo`, `dataInicio`, `dataFim`, paginação).
+
+Essas consultas ficam num repositório dedicado (`IRelatorioRepository`), separado dos
+repositórios de escrita, já que são projeções agregadas que não pertencem a um único agregado.
+
 ## Regras de negócio implementadas
 
 - **RN01** — saída/transferência não pode resultar em saldo negativo (validado atomicamente
@@ -139,7 +149,7 @@ transferência), Autenticação, Pedidos de Recebimento e Pedidos de Expedição
 críticas. Schema do banco aplicado automaticamente via DbUp.
 
 **Front-end**: cobre todo o núcleo do backend — Login, Dashboard (visão geral), Produtos,
-Estoque, Movimentações, Fornecedores, Clientes, Pedidos de Recebimento e Pedidos de Expedição.
+Estoque, Movimentações, Fornecedores, Clientes, Pedidos de Recebimento, Pedidos de Expedição
+e Relatórios (estoque baixo + histórico de movimentações filtrável).
 
-Próximos passos possíveis: relatórios, múltiplos armazéns, permissões por perfil de usuário
-no front, deploy.
+Próximos passos possíveis: múltiplos armazéns, permissões por perfil de usuário no front, deploy.
