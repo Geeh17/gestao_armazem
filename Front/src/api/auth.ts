@@ -8,3 +8,12 @@ export function login(dto: LoginRequest): Promise<TokenResponse> {
     auth: false,
   });
 }
+
+export interface AlterarSenhaRequest {
+  senhaAtual: string;
+  novaSenha: string;
+}
+
+export function alterarSenha(dto: AlterarSenhaRequest): Promise<void> {
+  return apiFetch<void>("/api/auth/alterar-senha", { method: "POST", body: dto });
+}

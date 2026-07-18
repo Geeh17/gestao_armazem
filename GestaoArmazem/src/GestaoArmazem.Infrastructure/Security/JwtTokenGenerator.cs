@@ -25,8 +25,13 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         {
             new Claim(JwtRegisteredClaimNames.Sub, usuario.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, usuario.Email),
-            new Claim(ClaimTypes.Name, usuario.Nome),
-            new Claim(ClaimTypes.Role, nomePerfil),
+            // Nomes curtos ("name", "role") em vez de ClaimTypes.Name/ClaimTypes.Role:
+            // essas constantes geram URIs longas no payload do JWT
+            // (http://schemas.microsoft.com/...), o que dificulta decodificar o token
+            // no front. RoleClaimType/NameClaimType em Program.cs são configurados
+            // para bater com esses nomes curtos.
+            new Claim("name", usuario.Nome),
+            new Claim("role", nomePerfil),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 

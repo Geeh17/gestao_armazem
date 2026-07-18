@@ -6,6 +6,9 @@ import { decodeJwt } from "@/lib/jwt";
 interface AuthContextValue {
   isAuthenticated: boolean;
   usuarioId: string | null;
+  nome: string | null;
+  role: string | null;
+  isAdmin: boolean;
   login: (email: string, senha: string) => Promise<void>;
   logout: () => void;
 }
@@ -27,8 +30,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<AuthContextValue>(() => {
-    const usuarioId = token ? (decodeJwt(token)?.sub ?? null) : null;
-    return { isAuthenticated: token !== null, usuarioId, login, logout };
+    const payload = token ? decodeJwt(token) : null;
+    const role = payload?.role ?? null;
+    return {
+      isAuthenticated: token !== null,
+      usuarioId: payload?.sub ?? null,
+      nome: payload?.name ?? null,
+      role,
+      isAdmin: role === "Administrador",
+      login,
+      logout,
+    };
   }, [token, login, logout]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

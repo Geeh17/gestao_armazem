@@ -18,6 +18,10 @@ builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // Mantém os nomes originais dos claims do token ("sub", "email", etc.) em vez
+        // de remapeá-los para os nomes longos do .NET (ClaimTypes.*) — facilita ler
+        // o Id do usuário logado como JwtRegisteredClaimNames.Sub nos controllers.
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -27,7 +31,12 @@ builder.Services
             ValidIssuer = jwtSettings["Issuer"],
             ValidAudience = jwtSettings["Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]!))
+                Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]!)),
+            // Bate com os claims "name"/"role" emitidos pelo JwtTokenGenerator —
+            // necessário para [Authorize(Roles = "...")] continuar funcionando
+            // com MapInboundClaims = false.
+            RoleClaimType = "role",
+            NameClaimType = "name"
         };
     });
 builder.Services.AddAuthorization();

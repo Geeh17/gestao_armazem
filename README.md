@@ -108,6 +108,20 @@ de exemplo do `appsettings.json` em produção.**
 Essas consultas ficam num repositório dedicado (`IRelatorioRepository`), separado dos
 repositórios de escrita, já que são projeções agregadas que não pertencem a um único agregado.
 
+## Usuários e Permissões
+
+- `GET/POST /api/perfis` e `GET/POST /api/usuarios` — restritos a usuários com perfil
+  `Administrador` (`[Authorize(Roles = "Administrador")]`, RN07). O front também esconde
+  os menus "Usuários" e "Perfis" e bloqueia a rota (`AdminRoute`) para quem não é admin —
+  mas a garantia de verdade é sempre a do backend.
+- `POST /api/auth/alterar-senha` — qualquer usuário logado troca a própria senha (exige a
+  senha atual).
+- O token JWT carrega `role` e `name` como claims curtas (não as URIs longas de
+  `ClaimTypes.*`), pra facilitar decodificar no front (`src/lib/jwt.ts`).
+
+> Sessões (tokens) emitidas antes dessa mudança não têm o claim `role` no formato novo —
+> se estiver testando, faça login de novo após atualizar o backend.
+
 ## Regras de negócio implementadas
 
 - **RN01** — saída/transferência não pode resultar em saldo negativo (validado atomicamente
@@ -150,8 +164,9 @@ críticas. Schema do banco aplicado automaticamente via DbUp.
 
 **Front-end**: cobre todo o núcleo do backend — Login, Dashboard (visão geral), Produtos,
 Armazéns, Localizações, Estoque, Movimentações, Fornecedores, Clientes, Pedidos de Recebimento,
-Pedidos de Expedição e Relatórios (estoque baixo + histórico de movimentações filtrável).
-Suporta múltiplos armazéns: toda tela que mostra ou seleciona uma localização exibe também
-o nome do armazém, já que o código de uma localização só é único dentro do próprio armazém.
+Pedidos de Expedição, Relatórios, Usuários e Perfis (RN07: só Administrador acessa), e troca
+de senha (qualquer usuário logado). Suporta múltiplos armazéns: toda tela que mostra ou
+seleciona uma localização exibe também o nome do armazém, já que o código de uma localização
+só é único dentro do próprio armazém.
 
-Próximos passos possíveis: permissões por perfil de usuário no front, deploy.
+Próximos passos possíveis: editar/excluir registros, cancelar pedidos, deploy.

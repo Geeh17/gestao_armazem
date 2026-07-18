@@ -1,9 +1,11 @@
 import { NavLink } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 interface NavItem {
   to: string;
   label: string;
   icon: string;
+  adminOnly?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -18,9 +20,14 @@ const navItems: NavItem[] = [
   { to: "/clientes", label: "Clientes", icon: "🧾" },
   { to: "/pedidos-expedicao", label: "Pedidos de Expedição", icon: "📤" },
   { to: "/relatorios", label: "Relatórios", icon: "📈" },
+  { to: "/usuarios", label: "Usuários", icon: "👤", adminOnly: true },
+  { to: "/perfis", label: "Perfis", icon: "🔐", adminOnly: true },
 ];
 
 export function Sidebar() {
+  const { isAdmin } = useAuth();
+  const itensVisiveis = navItems.filter((item) => !item.adminOnly || isAdmin);
+
   return (
     <aside className="flex h-screen w-60 shrink-0 flex-col bg-brand text-white">
       <div className="flex items-center gap-2 px-5 py-6">
@@ -34,7 +41,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-1 px-3">
-        {navItems.map((item) => (
+        {itensVisiveis.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
@@ -54,7 +61,7 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t border-white/10 px-5 py-4 text-xs text-white/50">
-        v0.5 · Múltiplos armazéns
+        v0.6 · Usuários e permissões
       </div>
     </aside>
   );

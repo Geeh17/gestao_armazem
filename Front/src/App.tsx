@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
+import { AdminRoute } from "@/components/layout/AdminRoute";
 import { AppShell } from "@/components/layout/AppShell";
 import { LoginPage } from "@/pages/LoginPage";
 import { DashboardPage } from "@/pages/DashboardPage";
@@ -19,6 +20,9 @@ import { PedidoExpedicaoDetailPage } from "@/pages/PedidoExpedicaoDetailPage";
 import { RelatoriosPage } from "@/pages/RelatoriosPage";
 import { ArmazensPage } from "@/pages/ArmazensPage";
 import { LocalizacoesPage } from "@/pages/LocalizacoesPage";
+import { UsuariosPage } from "@/pages/UsuariosPage";
+import { PerfisPage } from "@/pages/PerfisPage";
+import { TrocarSenhaPage } from "@/pages/TrocarSenhaPage";
 
 export default function App() {
   return (
@@ -44,6 +48,12 @@ export default function App() {
             <Route path="/relatorios" element={<RelatoriosPage />} />
             <Route path="/armazens" element={<ArmazensPage />} />
             <Route path="/localizacoes" element={<LocalizacoesPage />} />
+            <Route path="/trocar-senha" element={<TrocarSenhaPage />} />
+
+            <Route element={<AdminRoute />}>
+              <Route path="/usuarios" element={<UsuariosPage />} />
+              <Route path="/perfis" element={<PerfisPage />} />
+            </Route>
           </Route>
         </Route>
 
