@@ -18,3 +18,12 @@ public record CriarProdutoDto(
     string UnidadeMedida,
     string? CodigoBarras,
     int EstoqueMinimo);
+
+/// <summary>SKU não é editável — é o identificador estável do produto (RN03).</summary>
+public record AtualizarProdutoDto(
+    string Nome,
+    string? Descricao,
+    Guid CategoriaId,
+    string UnidadeMedida,
+    string? CodigoBarras,
+    int EstoqueMinimo);

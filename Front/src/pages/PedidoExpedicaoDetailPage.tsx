@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { expedirPedido, obterPedidoExpedicao, type PedidoExpedicao } from "@/api/pedidosExpedicao";
+import { cancelarPedidoExpedicao, expedirPedido, obterPedidoExpedicao, type PedidoExpedicao } from "@/api/pedidosExpedicao";
 import { listarClientes, type Cliente } from "@/api/clientes";
 import { listarProdutos } from "@/api/produtos";
 import { listarLocalizacoes, type Localizacao } from "@/api/localizacoes";
@@ -26,6 +26,7 @@ export function PedidoExpedicaoDetailPage() {
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState<string | null>(null);
   const [expedindo, setExpedindo] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
 
   function carregarPedido() {
     if (!id) return;
@@ -100,6 +101,24 @@ export function PedidoExpedicaoDetailPage() {
     }
   }
 
+  async function handleCancelar() {
+    if (!pedido) return;
+    if (!window.confirm("Cancelar este pedido de expedição? Essa ação não pode ser desfeita.")) return;
+
+    setErro(null);
+    setSucesso(null);
+    setCancelando(true);
+    try {
+      await cancelarPedidoExpedicao(pedido.id);
+      setSucesso("Pedido cancelado.");
+      carregarPedido();
+    } catch (err) {
+      setErro(err instanceof ApiError ? err.message : "Não foi possível cancelar o pedido.");
+    } finally {
+      setCancelando(false);
+    }
+  }
+
   if (erro && !pedido) {
     return <Alert>{erro}</Alert>;
   }
@@ -117,7 +136,14 @@ export function PedidoExpedicaoDetailPage() {
           <h1 className="text-xl font-semibold text-ink">Pedido de expedição</h1>
           <p className="text-sm text-muted">{nomeCliente(pedido.clienteId)}</p>
         </div>
-        <StatusBadge status={pedido.status} />
+        <div className="flex items-center gap-3">
+          <StatusBadge status={pedido.status} />
+          {!pedidoEncerrado && (
+            <Button type="button" variant="secondary" onClick={handleCancelar} isLoading={cancelando}>
+              Cancelar pedido
+            </Button>
+          )}
+        </div>
       </div>
 
       {erro && <Alert>{erro}</Alert>}

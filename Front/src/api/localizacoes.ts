@@ -24,3 +24,14 @@ export function listarLocalizacoes(): Promise<Localizacao[]> {
 export function criarLocalizacao(dto: CriarLocalizacaoRequest): Promise<Localizacao> {
   return apiFetch<Localizacao>("/api/localizacoes", { method: "POST", body: dto });
 }
+
+export function atualizarLocalizacao(
+  id: string,
+  dto: Omit<CriarLocalizacaoRequest, "armazemId">,
+): Promise<Localizacao> {
+  return apiFetch<Localizacao>(`/api/localizacoes/${id}`, { method: "PUT", body: dto });
+}
+
+export function excluirLocalizacao(id: string): Promise<void> {
+  return apiFetch<void>(`/api/localizacoes/${id}`, { method: "DELETE" });
+}

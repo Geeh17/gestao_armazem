@@ -14,4 +14,7 @@ public interface IPedidoRecebimentoService
     /// encerra o pedido automaticamente (RN05).
     /// </summary>
     Task ConfirmarRecebimentoItemAsync(Guid pedidoId, Guid itemId, ConfirmarRecebimentoItemDto dto);
+
+    /// <summary>Cancela o pedido, se ainda não estiver Concluido ou já Cancelado.</summary>
+    Task CancelarAsync(Guid pedidoId);
 }

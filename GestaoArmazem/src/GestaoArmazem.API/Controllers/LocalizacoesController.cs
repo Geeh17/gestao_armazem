@@ -29,4 +29,17 @@ public class LocalizacoesController : ControllerBase
         var localizacao = await _localizacaoService.CriarAsync(dto);
         return CreatedAtAction(nameof(Listar), localizacao);
     }
+
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<LocalizacaoDto>> Atualizar(Guid id, [FromBody] AtualizarLocalizacaoDto dto)
+    {
+        return Ok(await _localizacaoService.AtualizarAsync(id, dto));
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Excluir(Guid id)
+    {
+        await _localizacaoService.ExcluirAsync(id);
+        return NoContent();
+    }
 }

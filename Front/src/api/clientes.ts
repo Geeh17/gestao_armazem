@@ -20,3 +20,11 @@ export function listarClientes(): Promise<Cliente[]> {
 export function criarCliente(dto: CriarClienteRequest): Promise<Cliente> {
   return apiFetch<Cliente>("/api/clientes", { method: "POST", body: dto });
 }
+
+export function atualizarCliente(id: string, dto: CriarClienteRequest): Promise<Cliente> {
+  return apiFetch<Cliente>(`/api/clientes/${id}`, { method: "PUT", body: dto });
+}
+
+export function excluirCliente(id: string): Promise<void> {
+  return apiFetch<void>(`/api/clientes/${id}`, { method: "DELETE" });
+}

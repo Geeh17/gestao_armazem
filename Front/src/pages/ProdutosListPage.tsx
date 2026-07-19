@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { listarProdutos } from "@/api/produtos";
+import { excluirProduto, listarProdutos } from "@/api/produtos";
 import { ApiError } from "@/api/client";
 import type { Produto } from "@/types/produto";
 import { Alert } from "@/components/ui/Alert";
@@ -8,24 +8,32 @@ import { Alert } from "@/components/ui/Alert";
 export function ProdutosListPage() {
   const [produtos, setProdutos] = useState<Produto[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [excluindoId, setExcluindoId] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelado = false;
-
+  function carregar() {
     listarProdutos()
-      .then((dados) => {
-        if (!cancelado) setProdutos(dados);
-      })
-      .catch((err) => {
-        if (!cancelado) {
-          setErro(err instanceof ApiError ? err.message : "Não foi possível carregar os produtos.");
-        }
-      });
+      .then(setProdutos)
+      .catch((err) => setErro(err instanceof ApiError ? err.message : "Não foi possível carregar os produtos."));
+  }
 
-    return () => {
-      cancelado = true;
-    };
-  }, []);
+  useEffect(carregar, []);
+
+  async function handleExcluir(produto: Produto) {
+    if (!window.confirm(`Excluir o produto "${produto.nome}"? Essa ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    setErro(null);
+    setExcluindoId(produto.id);
+    try {
+      await excluirProduto(produto.id);
+      carregar();
+    } catch (err) {
+      setErro(err instanceof ApiError ? err.message : "Não foi possível excluir o produto.");
+    } finally {
+      setExcluindoId(null);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -66,6 +74,7 @@ export function ProdutosListPage() {
                 <th className="px-4 py-3 font-medium">Nome</th>
                 <th className="px-4 py-3 font-medium">Unidade</th>
                 <th className="px-4 py-3 font-medium">Estoque mínimo</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -75,6 +84,24 @@ export function ProdutosListPage() {
                   <td className="px-4 py-3 text-ink">{produto.nome}</td>
                   <td className="px-4 py-3 font-data text-muted">{produto.unidadeMedida}</td>
                   <td className="px-4 py-3 font-data text-muted">{produto.estoqueMinimo}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-3">
+                      <Link
+                        to={`/produtos/${produto.id}/editar`}
+                        className="text-sm font-medium text-brand hover:underline"
+                      >
+                        Editar
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleExcluir(produto)}
+                        disabled={excluindoId === produto.id}
+                        className="text-sm font-medium text-danger hover:underline disabled:opacity-50"
+                      >
+                        {excluindoId === produto.id ? "Excluindo..." : "Excluir"}
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -29,4 +29,17 @@ public class ArmazensController : ControllerBase
         var armazem = await _armazemService.CriarAsync(dto);
         return CreatedAtAction(nameof(Listar), armazem);
     }
+
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<ArmazemDto>> Atualizar(Guid id, [FromBody] AtualizarArmazemDto dto)
+    {
+        return Ok(await _armazemService.AtualizarAsync(id, dto));
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Excluir(Guid id)
+    {
+        await _armazemService.ExcluirAsync(id);
+        return NoContent();
+    }
 }

@@ -51,4 +51,12 @@ public class PedidosExpedicaoController : ControllerBase
         await _pedidoService.ExpedirAsync(id, dto);
         return NoContent();
     }
+
+    /// <summary>Cancela o pedido, se ainda não estiver Concluido ou já Cancelado.</summary>
+    [HttpPost("{id:guid}/cancelar")]
+    public async Task<IActionResult> Cancelar(Guid id)
+    {
+        await _pedidoService.CancelarAsync(id);
+        return NoContent();
+    }
 }

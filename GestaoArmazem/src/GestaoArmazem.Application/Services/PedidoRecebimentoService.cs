@@ -119,6 +119,20 @@ public class PedidoRecebimentoService : IPedidoRecebimentoService
         }
     }
 
+    public async Task CancelarAsync(Guid pedidoId)
+    {
+        var pedido = await _pedidoRepository.ObterPorIdAsync(pedidoId)
+            ?? throw new NotFoundException("Pedido de recebimento", pedidoId);
+
+        if (pedido.Status is StatusPedido.Concluido or StatusPedido.Cancelado)
+        {
+            throw new InvalidOperationException(
+                $"O pedido {pedidoId} já está {pedido.Status} e não pode ser cancelado.");
+        }
+
+        await _pedidoRepository.AtualizarStatusAsync(pedidoId, StatusPedido.Cancelado, null);
+    }
+
     private static PedidoRecebimentoDto ToDto(PedidoRecebimento pedido, IEnumerable<ItemPedidoRecebimento> itens) => new(
         pedido.Id,
         pedido.FornecedorId,

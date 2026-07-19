@@ -118,4 +118,28 @@ public class PedidoExpedicaoServiceTests
 
         _estoqueRepository.Verify(r => r.TentarDecrementarAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>()), Times.Never);
     }
+
+    [Fact]
+    public async Task CancelarAsync_PedidoPendente_DeveCancelar()
+    {
+        var pedidoId = Guid.NewGuid();
+        _pedidoRepository.Setup(r => r.ObterPorIdAsync(pedidoId))
+            .ReturnsAsync(new PedidoExpedicao { Id = pedidoId, Status = StatusPedido.Pendente });
+
+        await _sut.CancelarAsync(pedidoId);
+
+        _pedidoRepository.Verify(r => r.AtualizarStatusAsync(pedidoId, StatusPedido.Cancelado, null), Times.Once);
+    }
+
+    [Fact]
+    public async Task CancelarAsync_PedidoJaCancelado_DeveLancarInvalidOperationException()
+    {
+        var pedidoId = Guid.NewGuid();
+        _pedidoRepository.Setup(r => r.ObterPorIdAsync(pedidoId))
+            .ReturnsAsync(new PedidoExpedicao { Id = pedidoId, Status = StatusPedido.Cancelado });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.CancelarAsync(pedidoId));
+
+        _pedidoRepository.Verify(r => r.AtualizarStatusAsync(It.IsAny<Guid>(), It.IsAny<StatusPedido>(), It.IsAny<DateTime?>()), Times.Never);
+    }
 }

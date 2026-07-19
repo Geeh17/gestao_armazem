@@ -159,6 +159,20 @@ public class PedidoExpedicaoService : IPedidoExpedicaoService
         }
     }
 
+    public async Task CancelarAsync(Guid pedidoId)
+    {
+        var pedido = await _pedidoRepository.ObterPorIdAsync(pedidoId)
+            ?? throw new NotFoundException("Pedido de expedição", pedidoId);
+
+        if (pedido.Status is StatusPedido.Concluido or StatusPedido.Cancelado)
+        {
+            throw new InvalidOperationException(
+                $"O pedido {pedidoId} já está {pedido.Status} e não pode ser cancelado.");
+        }
+
+        await _pedidoRepository.AtualizarStatusAsync(pedidoId, StatusPedido.Cancelado, null);
+    }
+
     private static PedidoExpedicaoDto ToDto(PedidoExpedicao pedido, IEnumerable<ItemPedidoExpedicao> itens) => new(
         pedido.Id,
         pedido.ClienteId,

@@ -29,4 +29,17 @@ public class ClientesController : ControllerBase
         var cliente = await _clienteService.CriarAsync(dto);
         return CreatedAtAction(nameof(Listar), cliente);
     }
+
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<ClienteDto>> Atualizar(Guid id, [FromBody] AtualizarClienteDto dto)
+    {
+        return Ok(await _clienteService.AtualizarAsync(id, dto));
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Excluir(Guid id)
+    {
+        await _clienteService.ExcluirAsync(id);
+        return NoContent();
+    }
 }

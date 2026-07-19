@@ -52,3 +52,7 @@ export function confirmarRecebimentoItem(
     body: dto,
   });
 }
+
+export function cancelarPedidoRecebimento(pedidoId: string): Promise<void> {
+  return apiFetch<void>(`/api/pedidos-recebimento/${pedidoId}/cancelar`, { method: "POST" });
+}

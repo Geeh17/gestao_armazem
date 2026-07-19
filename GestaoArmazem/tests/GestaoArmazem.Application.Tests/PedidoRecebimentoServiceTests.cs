@@ -114,4 +114,28 @@ public class PedidoRecebimentoServiceTests
         _pedidoRepository.Verify(r => r.AtualizarQuantidadeRecebidaAsync(itemId, 10), Times.Once);
         _pedidoRepository.Verify(r => r.AtualizarStatusAsync(pedidoId, StatusPedido.Concluido, It.IsAny<DateTime?>()), Times.Once);
     }
+
+    [Fact]
+    public async Task CancelarAsync_PedidoPendente_DeveCancelar()
+    {
+        var pedidoId = Guid.NewGuid();
+        _pedidoRepository.Setup(r => r.ObterPorIdAsync(pedidoId))
+            .ReturnsAsync(new PedidoRecebimento { Id = pedidoId, Status = StatusPedido.Pendente });
+
+        await _sut.CancelarAsync(pedidoId);
+
+        _pedidoRepository.Verify(r => r.AtualizarStatusAsync(pedidoId, StatusPedido.Cancelado, null), Times.Once);
+    }
+
+    [Fact]
+    public async Task CancelarAsync_PedidoJaConcluido_DeveLancarInvalidOperationException()
+    {
+        var pedidoId = Guid.NewGuid();
+        _pedidoRepository.Setup(r => r.ObterPorIdAsync(pedidoId))
+            .ReturnsAsync(new PedidoRecebimento { Id = pedidoId, Status = StatusPedido.Concluido });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.CancelarAsync(pedidoId));
+
+        _pedidoRepository.Verify(r => r.AtualizarStatusAsync(It.IsAny<Guid>(), It.IsAny<StatusPedido>(), It.IsAny<DateTime?>()), Times.Never);
+    }
 }

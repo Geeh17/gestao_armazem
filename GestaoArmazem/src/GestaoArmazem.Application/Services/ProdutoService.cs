@@ -52,6 +52,35 @@ public class ProdutoService : IProdutoService
         return ToDto(produto);
     }
 
+    public async Task<ProdutoDto> AtualizarAsync(Guid id, AtualizarProdutoDto dto)
+    {
+        var produto = await _produtoRepository.ObterPorIdAsync(id)
+            ?? throw new NotFoundException("Produto", id);
+
+        produto.Nome = dto.Nome;
+        produto.Descricao = dto.Descricao;
+        produto.CategoriaId = dto.CategoriaId;
+        produto.UnidadeMedida = dto.UnidadeMedida;
+        produto.CodigoBarras = dto.CodigoBarras;
+        produto.EstoqueMinimo = dto.EstoqueMinimo;
+
+        await _produtoRepository.AtualizarAsync(produto);
+        return ToDto(produto);
+    }
+
+    public async Task ExcluirAsync(Guid id)
+    {
+        _ = await _produtoRepository.ObterPorIdAsync(id) ?? throw new NotFoundException("Produto", id);
+
+        if (await _produtoRepository.PossuiReferenciasAsync(id))
+        {
+            throw new InvalidOperationException(
+                "Este produto não pode ser excluído porque já tem estoque, movimentações ou pedidos associados.");
+        }
+
+        await _produtoRepository.ExcluirAsync(id);
+    }
+
     private static ProdutoDto ToDto(Produto p) => new(
         p.Id, p.SKU, p.Nome, p.Descricao, p.CategoriaId, p.UnidadeMedida, p.CodigoBarras, p.EstoqueMinimo);
 }

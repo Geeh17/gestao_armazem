@@ -1,4 +1,5 @@
 using GestaoArmazem.Application.DTOs;
+using GestaoArmazem.Application.Exceptions;
 using GestaoArmazem.Application.Interfaces;
 using GestaoArmazem.Domain.Entities;
 using GestaoArmazem.Domain.Interfaces;
@@ -31,5 +32,30 @@ public class ArmazemService : IArmazemService
 
         await _armazemRepository.CriarAsync(armazem);
         return new ArmazemDto(armazem.Id, armazem.Nome, armazem.Endereco);
+    }
+
+    public async Task<ArmazemDto> AtualizarAsync(Guid id, AtualizarArmazemDto dto)
+    {
+        var armazem = await _armazemRepository.ObterPorIdAsync(id)
+            ?? throw new NotFoundException("Armazém", id);
+
+        armazem.Nome = dto.Nome;
+        armazem.Endereco = dto.Endereco;
+
+        await _armazemRepository.AtualizarAsync(armazem);
+        return new ArmazemDto(armazem.Id, armazem.Nome, armazem.Endereco);
+    }
+
+    public async Task ExcluirAsync(Guid id)
+    {
+        _ = await _armazemRepository.ObterPorIdAsync(id) ?? throw new NotFoundException("Armazém", id);
+
+        if (await _armazemRepository.PossuiReferenciasAsync(id))
+        {
+            throw new InvalidOperationException(
+                "Este armazém não pode ser excluído porque já tem localizações cadastradas.");
+        }
+
+        await _armazemRepository.ExcluirAsync(id);
     }
 }

@@ -1,4 +1,5 @@
 using GestaoArmazem.Application.DTOs;
+using GestaoArmazem.Application.Exceptions;
 using GestaoArmazem.Application.Interfaces;
 using GestaoArmazem.Domain.Entities;
 using GestaoArmazem.Domain.Interfaces;
@@ -32,6 +33,32 @@ public class FornecedorService : IFornecedorService
 
         await _fornecedorRepository.CriarAsync(fornecedor);
         return ToDto(fornecedor);
+    }
+
+    public async Task<FornecedorDto> AtualizarAsync(Guid id, AtualizarFornecedorDto dto)
+    {
+        var fornecedor = await _fornecedorRepository.ObterPorIdAsync(id)
+            ?? throw new NotFoundException("Fornecedor", id);
+
+        fornecedor.Nome = dto.Nome;
+        fornecedor.CNPJ = dto.CNPJ;
+        fornecedor.Contato = dto.Contato;
+
+        await _fornecedorRepository.AtualizarAsync(fornecedor);
+        return ToDto(fornecedor);
+    }
+
+    public async Task ExcluirAsync(Guid id)
+    {
+        _ = await _fornecedorRepository.ObterPorIdAsync(id) ?? throw new NotFoundException("Fornecedor", id);
+
+        if (await _fornecedorRepository.PossuiReferenciasAsync(id))
+        {
+            throw new InvalidOperationException(
+                "Este fornecedor não pode ser excluído porque já tem pedidos de recebimento associados.");
+        }
+
+        await _fornecedorRepository.ExcluirAsync(id);
     }
 
     private static FornecedorDto ToDto(Fornecedor f) => new(f.Id, f.Nome, f.CNPJ, f.Contato);

@@ -142,6 +142,17 @@ Notas de implementação:
   `MovimentacaoService` porque precisa de uma única transação cobrindo múltiplos itens
   (RN06). Os detalhes estão comentados no `PedidoExpedicaoService`.
 
+## Editar, Excluir e Cancelar
+
+Produtos, Fornecedores, Clientes, Armazéns e Localizações têm `PUT` (editar) e `DELETE`
+(excluir) na API. Antes de excluir, cada endpoint verifica se o registro está referenciado
+em outra tabela (estoque, movimentações, itens de pedido, pedidos) e bloqueia com uma
+mensagem clara em vez de deixar estourar um erro de FK constraint. Produto não permite
+editar o SKU; Localização não permite trocar de Armazém (crie uma nova localização nesse caso).
+
+Pedidos de Recebimento e Expedição podem ser cancelados (`POST {id}/cancelar`) enquanto
+não estiverem `Concluido` ou já `Cancelado`.
+
 ## Design do front-end
 
 Paleta e tipografia ficam centralizadas em `frontend/src/index.css` (bloco `@theme` do
@@ -167,6 +178,8 @@ Armazéns, Localizações, Estoque, Movimentações, Fornecedores, Clientes, Ped
 Pedidos de Expedição, Relatórios, Usuários e Perfis (RN07: só Administrador acessa), e troca
 de senha (qualquer usuário logado). Suporta múltiplos armazéns: toda tela que mostra ou
 seleciona uma localização exibe também o nome do armazém, já que o código de uma localização
-só é único dentro do próprio armazém.
+só é único dentro do próprio armazém. Produtos, Fornecedores, Clientes, Armazéns e Localizações
+têm edição e exclusão (com checagem de dependências antes de excluir); Pedidos de Recebimento
+e Expedição podem ser cancelados enquanto não estiverem concluídos.
 
-Próximos passos possíveis: editar/excluir registros, cancelar pedidos, deploy.
+Próximo passo possível: deploy.

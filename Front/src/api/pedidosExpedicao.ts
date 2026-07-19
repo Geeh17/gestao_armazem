@@ -44,3 +44,7 @@ export function criarPedidoExpedicao(dto: CriarPedidoExpedicaoRequest): Promise<
 export function expedirPedido(pedidoId: string, dto: ExpedirPedidoRequest): Promise<void> {
   return apiFetch<void>(`/api/pedidos-expedicao/${pedidoId}/expedir`, { method: "POST", body: dto });
 }
+
+export function cancelarPedidoExpedicao(pedidoId: string): Promise<void> {
+  return apiFetch<void>(`/api/pedidos-expedicao/${pedidoId}/cancelar`, { method: "POST" });
+}

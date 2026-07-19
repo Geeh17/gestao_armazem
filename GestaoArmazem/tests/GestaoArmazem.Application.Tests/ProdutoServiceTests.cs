@@ -45,4 +45,28 @@ public class ProdutoServiceTests
         Assert.Equal(dto.Nome, resultado.Nome);
         _produtoRepository.Verify(r => r.CriarAsync(It.IsAny<Produto>()), Times.Once);
     }
+
+    [Fact]
+    public async Task ExcluirAsync_ComReferencias_DeveLancarInvalidOperationException()
+    {
+        var produtoId = Guid.NewGuid();
+        _produtoRepository.Setup(r => r.ObterPorIdAsync(produtoId)).ReturnsAsync(new Produto { Id = produtoId });
+        _produtoRepository.Setup(r => r.PossuiReferenciasAsync(produtoId)).ReturnsAsync(true);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.ExcluirAsync(produtoId));
+
+        _produtoRepository.Verify(r => r.ExcluirAsync(It.IsAny<Guid>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ExcluirAsync_SemReferencias_DeveExcluir()
+    {
+        var produtoId = Guid.NewGuid();
+        _produtoRepository.Setup(r => r.ObterPorIdAsync(produtoId)).ReturnsAsync(new Produto { Id = produtoId });
+        _produtoRepository.Setup(r => r.PossuiReferenciasAsync(produtoId)).ReturnsAsync(false);
+
+        await _sut.ExcluirAsync(produtoId);
+
+        _produtoRepository.Verify(r => r.ExcluirAsync(produtoId), Times.Once);
+    }
 }

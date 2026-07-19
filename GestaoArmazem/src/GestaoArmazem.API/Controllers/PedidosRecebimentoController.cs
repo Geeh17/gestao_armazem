@@ -52,4 +52,12 @@ public class PedidosRecebimentoController : ControllerBase
         await _pedidoService.ConfirmarRecebimentoItemAsync(id, itemId, dto);
         return NoContent();
     }
+
+    /// <summary>Cancela o pedido, se ainda não estiver Concluido ou já Cancelado.</summary>
+    [HttpPost("{id:guid}/cancelar")]
+    public async Task<IActionResult> Cancelar(Guid id)
+    {
+        await _pedidoService.CancelarAsync(id);
+        return NoContent();
+    }
 }

@@ -29,4 +29,17 @@ public class FornecedoresController : ControllerBase
         var fornecedor = await _fornecedorService.CriarAsync(dto);
         return CreatedAtAction(nameof(Listar), fornecedor);
     }
+
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<FornecedorDto>> Atualizar(Guid id, [FromBody] AtualizarFornecedorDto dto)
+    {
+        return Ok(await _fornecedorService.AtualizarAsync(id, dto));
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Excluir(Guid id)
+    {
+        await _fornecedorService.ExcluirAsync(id);
+        return NoContent();
+    }
 }

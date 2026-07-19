@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
+  cancelarPedidoRecebimento,
   confirmarRecebimentoItem,
   obterPedidoRecebimento,
   type PedidoRecebimento,
@@ -33,6 +34,7 @@ export function PedidoRecebimentoDetailPage() {
   const [quantidades, setQuantidades] = useState<Record<string, number>>({});
   const [localizacaoPorItem, setLocalizacaoPorItem] = useState<Record<string, string>>({});
   const [confirmandoItemId, setConfirmandoItemId] = useState<string | null>(null);
+  const [cancelando, setCancelando] = useState(false);
 
   function carregarPedido() {
     if (!id) return;
@@ -105,6 +107,24 @@ export function PedidoRecebimentoDetailPage() {
     }
   }
 
+  async function handleCancelar() {
+    if (!pedido) return;
+    if (!window.confirm("Cancelar este pedido de recebimento? Essa ação não pode ser desfeita.")) return;
+
+    setErro(null);
+    setSucesso(null);
+    setCancelando(true);
+    try {
+      await cancelarPedidoRecebimento(pedido.id);
+      setSucesso("Pedido cancelado.");
+      carregarPedido();
+    } catch (err) {
+      setErro(err instanceof ApiError ? err.message : "Não foi possível cancelar o pedido.");
+    } finally {
+      setCancelando(false);
+    }
+  }
+
   if (erro && !pedido) {
     return <Alert>{erro}</Alert>;
   }
@@ -122,7 +142,14 @@ export function PedidoRecebimentoDetailPage() {
           <h1 className="text-xl font-semibold text-ink">Pedido de recebimento</h1>
           <p className="text-sm text-muted">{nomeFornecedor(pedido.fornecedorId)}</p>
         </div>
-        <StatusBadge status={pedido.status} />
+        <div className="flex items-center gap-3">
+          <StatusBadge status={pedido.status} />
+          {!pedidoEncerrado && (
+            <Button type="button" variant="secondary" onClick={handleCancelar} isLoading={cancelando}>
+              Cancelar pedido
+            </Button>
+          )}
+        </div>
       </div>
 
       {erro && <Alert>{erro}</Alert>}

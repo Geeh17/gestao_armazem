@@ -1,4 +1,5 @@
 using GestaoArmazem.Application.DTOs;
+using GestaoArmazem.Application.Exceptions;
 using GestaoArmazem.Application.Interfaces;
 using GestaoArmazem.Domain.Entities;
 using GestaoArmazem.Domain.Interfaces;
@@ -53,5 +54,41 @@ public class LocalizacaoService : ILocalizacaoService
         return new LocalizacaoDto(
             localizacao.Id, localizacao.ArmazemId, localizacao.Corredor,
             localizacao.Prateleira, localizacao.Nivel, localizacao.Codigo);
+    }
+
+    public async Task<LocalizacaoDto> AtualizarAsync(Guid id, AtualizarLocalizacaoDto dto)
+    {
+        var localizacao = await _localizacaoRepository.ObterPorIdAsync(id)
+            ?? throw new NotFoundException("Localização", id);
+
+        var localizacoesDoArmazem = await _localizacaoRepository.ListarPorArmazemAsync(localizacao.ArmazemId);
+        if (localizacoesDoArmazem.Any(l => l.Id != id && l.Codigo.Equals(dto.Codigo, StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new InvalidOperationException(
+                $"Já existe outra localização com o código '{dto.Codigo}' neste armazém.");
+        }
+
+        localizacao.Corredor = dto.Corredor;
+        localizacao.Prateleira = dto.Prateleira;
+        localizacao.Nivel = dto.Nivel;
+        localizacao.Codigo = dto.Codigo;
+
+        await _localizacaoRepository.AtualizarAsync(localizacao);
+        return new LocalizacaoDto(
+            localizacao.Id, localizacao.ArmazemId, localizacao.Corredor,
+            localizacao.Prateleira, localizacao.Nivel, localizacao.Codigo);
+    }
+
+    public async Task ExcluirAsync(Guid id)
+    {
+        _ = await _localizacaoRepository.ObterPorIdAsync(id) ?? throw new NotFoundException("Localização", id);
+
+        if (await _localizacaoRepository.PossuiReferenciasAsync(id))
+        {
+            throw new InvalidOperationException(
+                "Esta localização não pode ser excluída porque já tem estoque ou movimentações associadas.");
+        }
+
+        await _localizacaoRepository.ExcluirAsync(id);
     }
 }

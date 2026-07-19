@@ -41,4 +41,19 @@ public class ProdutosController : ControllerBase
         var produto = await _produtoService.CriarAsync(dto);
         return CreatedAtAction(nameof(ObterPorId), new { id = produto.Id }, produto);
     }
+
+    /// <summary>Atualiza um produto existente (SKU não é editável).</summary>
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<ProdutoDto>> Atualizar(Guid id, [FromBody] AtualizarProdutoDto dto)
+    {
+        return Ok(await _produtoService.AtualizarAsync(id, dto));
+    }
+
+    /// <summary>Exclui um produto, se não houver estoque, movimentações ou pedidos associados.</summary>
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Excluir(Guid id)
+    {
+        await _produtoService.ExcluirAsync(id);
+        return NoContent();
+    }
 }

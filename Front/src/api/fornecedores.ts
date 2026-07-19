@@ -20,3 +20,11 @@ export function listarFornecedores(): Promise<Fornecedor[]> {
 export function criarFornecedor(dto: CriarFornecedorRequest): Promise<Fornecedor> {
   return apiFetch<Fornecedor>("/api/fornecedores", { method: "POST", body: dto });
 }
+
+export function atualizarFornecedor(id: string, dto: CriarFornecedorRequest): Promise<Fornecedor> {
+  return apiFetch<Fornecedor>(`/api/fornecedores/${id}`, { method: "PUT", body: dto });
+}
+
+export function excluirFornecedor(id: string): Promise<void> {
+  return apiFetch<void>(`/api/fornecedores/${id}`, { method: "DELETE" });
+}

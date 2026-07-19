@@ -13,4 +13,7 @@ public interface IPedidoExpedicaoService
     /// suficiente para TODOS os itens — caso contrário, nada é baixado do estoque.
     /// </summary>
     Task ExpedirAsync(Guid pedidoId, ExpedirPedidoDto dto);
+
+    /// <summary>Cancela o pedido, se ainda não estiver Concluido ou já Cancelado.</summary>
+    Task CancelarAsync(Guid pedidoId);
 }
