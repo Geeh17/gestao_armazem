@@ -1,16 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { decodeJwt } from "./jwt";
-
-/** Monta um JWT fake (header.payload.signature) só com o payload que importa para o teste. */
-function montarToken(payload: Record<string, unknown>): string {
-  const base64url = (obj: object) => {
-    const bytesUtf8 = new TextEncoder().encode(JSON.stringify(obj));
-    const binario = String.fromCharCode(...bytesUtf8);
-    return btoa(binario).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  };
-
-  return `${base64url({ alg: "HS256", typ: "JWT" })}.${base64url(payload)}.assinatura-fake`;
-}
+import { montarTokenFake as montarToken } from "@/test/token";
 
 describe("decodeJwt", () => {
   it("decodifica um token válido e retorna os claims", () => {

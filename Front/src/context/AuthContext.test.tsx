@@ -3,16 +3,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { AuthProvider, useAuth } from "./AuthContext";
 import * as authApi from "@/api/auth";
-
-/** Monta um JWT fake só com os claims usados pelo AuthContext. */
-function montarToken(payload: Record<string, unknown>): string {
-  const base64url = (obj: object) => {
-    const bytesUtf8 = new TextEncoder().encode(JSON.stringify(obj));
-    const binario = String.fromCharCode(...bytesUtf8);
-    return btoa(binario).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  };
-  return `${base64url({ alg: "HS256" })}.${base64url(payload)}.assinatura-fake`;
-}
+import { montarTokenFake as montarToken } from "@/test/token";
 
 function wrapper({ children }: { children: ReactNode }) {
   return <AuthProvider>{children}</AuthProvider>;
