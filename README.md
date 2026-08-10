@@ -1,7 +1,7 @@
 # Gestão de Armazém
 
-Sistema de gestão de armazém (WMS) — controle de estoque, localizações, movimentações e
-pedidos de recebimento/expedição. Full-stack: API em .NET, front-end em React.
+Sistema de gestão de armazém (WMS) — controle de estoque, localizações, movimentações e pedidos de recebimento/expedição.
+Full-stack: API em .NET, front-end em React.
 
 ## Stack
 
@@ -14,6 +14,7 @@ pedidos de recebimento/expedição. Full-stack: API em .NET, front-end em React.
 | Autenticação    | JWT (bcrypt para hash de senha)                 |
 | Front-end       | React 19 + TypeScript, Vite 8                   |
 | Estilização     | Tailwind CSS v4                                 |
+| Testes          | xUnit + Moq (back-end), Vitest + Testing Library (front-end) |
 
 ## Estrutura do repositório
 
@@ -29,7 +30,7 @@ pedidos de recebimento/expedição. Full-stack: API em .NET, front-end em React.
 │   └── tests/
 │       └── GestaoArmazem.Application.Tests
 │
-├── frontend/                                # Front-end (React + TypeScript + Tailwind)
+├── Front/                                    # Front-end (React + TypeScript + Tailwind)
 │   └── src/
 │       ├── api/            # Client HTTP + chamadas por recurso (auth, produtos, ...)
 │       ├── components/
@@ -68,7 +69,7 @@ pedidos de recebimento/expedição. Full-stack: API em .NET, front-end em React.
 
 1. Em outro terminal:
    ```
-   cd frontend
+   cd Front
    npm install
    cp .env.example .env
    ```
@@ -82,10 +83,17 @@ pedidos de recebimento/expedição. Full-stack: API em .NET, front-end em React.
    - Email: `admin@gestaoarmazem.local`
    - Senha: `Admin@123`
 
-### Rodando os testes do back-end
+### Rodando os testes
 
+Back-end:
 ```
 dotnet test GestaoArmazem/tests/GestaoArmazem.Application.Tests
+```
+
+Front-end (a partir de `Front/`, com as dependências já instaladas):
+```
+npm test          # roda uma vez e sai (bom para CI)
+npm run test:watch  # fica observando os arquivos
 ```
 
 ## Autenticação
@@ -142,6 +150,23 @@ Notas de implementação:
   `MovimentacaoService` porque precisa de uma única transação cobrindo múltiplos itens
   (RN06). Os detalhes estão comentados no `PedidoExpedicaoService`.
 
+## Testes
+
+**Back-end** (`GestaoArmazem.Application.Tests`, xUnit + Moq): testes unitários das regras
+de negócio, mockando os repositórios — não tocam banco de dados real. Cobrem RN01, RN05,
+RN06, RN08 e a lógica de autenticação/usuários.
+
+**Front-end** (Vitest + Testing Library, configurado em `Front/vite.config.ts`): cobre a
+lógica onde um bug passaria despercebido silenciosamente — decodificação do JWT
+(`lib/jwt.ts`), formatação de localização entre armazéns diferentes (`lib/localizacao.ts`),
+o client HTTP e tratamento de erro da API (`api/client.ts`), o `AuthContext` (login/logout/
+`isAdmin`), e os componentes de UI base.
+
+> Nenhum dos dois lados tem testes de integração validados neste ambiente — os testes
+> unitários mockam suas dependências (repositórios no back-end, `fetch` no front-end) e por
+> isso não pegam, por exemplo, erros de SQL. Foi assim que um bug de ordem de colunas no
+> relatório de estoque baixo passou despercebido pelos testes unitários do back-end.
+
 ## Editar, Excluir e Cancelar
 
 Produtos, Fornecedores, Clientes, Armazéns e Localizações têm `PUT` (editar) e `DELETE`
@@ -155,7 +180,7 @@ não estiverem `Concluido` ou já `Cancelado`.
 
 ## Design do front-end
 
-Paleta e tipografia ficam centralizadas em `frontend/src/index.css` (bloco `@theme` do
+Paleta e tipografia ficam centralizadas em `Front/src/index.css` (bloco `@theme` do
 Tailwind v4):
 
 - **Navy** (`--color-brand`) como cor primária — a mesma usada na documentação técnica do
@@ -170,8 +195,8 @@ Tailwind v4):
 
 **Back-end**: núcleo funcional completo — Produtos, Estoque, Movimentações (entrada, saída,
 transferência), Autenticação, Pedidos de Recebimento e Pedidos de Expedição, ponta a ponta
-(Domain → Application → Infrastructure → API), com testes unitários das regras de negócio
-críticas. Schema do banco aplicado automaticamente via DbUp.
+(Domain → Application → Infrastructure → API), com testes unitários (xUnit + Moq) das regras
+de negócio críticas. Schema do banco aplicado automaticamente via DbUp.
 
 **Front-end**: cobre todo o núcleo do backend — Login, Dashboard (visão geral), Produtos,
 Armazéns, Localizações, Estoque, Movimentações, Fornecedores, Clientes, Pedidos de Recebimento,
@@ -180,6 +205,5 @@ de senha (qualquer usuário logado). Suporta múltiplos armazéns: toda tela que
 seleciona uma localização exibe também o nome do armazém, já que o código de uma localização
 só é único dentro do próprio armazém. Produtos, Fornecedores, Clientes, Armazéns e Localizações
 têm edição e exclusão (com checagem de dependências antes de excluir); Pedidos de Recebimento
-e Expedição podem ser cancelados enquanto não estiverem concluídos.
-
-Próximo passo possível: deploy.
+e Expedição podem ser cancelados enquanto não estiverem concluídos. 39 testes unitários
+(Vitest + Testing Library) cobrindo autenticação, permissões e componentes base.
