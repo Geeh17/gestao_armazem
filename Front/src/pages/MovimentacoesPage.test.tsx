@@ -9,6 +9,7 @@ import * as produtosApi from "@/api/produtos";
 import * as localizacoesApi from "@/api/localizacoes";
 import * as armazensApi from "@/api/armazens";
 import * as movimentacoesApi from "@/api/movimentacoes";
+import * as estoqueApi from "@/api/estoque";
 import type { Produto } from "@/types/produto";
 
 const produtos: Produto[] = [
@@ -34,6 +35,9 @@ function mockarCarregamentoInicial() {
   vi.spyOn(produtosApi, "listarProdutos").mockResolvedValue(produtos);
   vi.spyOn(localizacoesApi, "listarLocalizacoes").mockResolvedValue(localizacoes);
   vi.spyOn(armazensApi, "listarArmazens").mockResolvedValue(armazens);
+  vi.spyOn(estoqueApi, "consultarEstoquePorProduto").mockResolvedValue([
+    { produtoId: "produto-1", localizacaoId: "loc-1", quantidade: 20 },
+  ]);
 }
 
 function renderPagina() {
@@ -137,5 +141,43 @@ describe("MovimentacoesPage", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Saldo insuficiente do produto na localização.",
     );
+  });
+
+  it("aba Ajuste mostra 'Quantidade contada' (não 'Quantidade') e o saldo atual do sistema", async () => {
+    mockarCarregamentoInicial();
+    const usuario = userEvent.setup();
+    renderPagina();
+
+    await screen.findByLabelText("Localização de destino");
+    await usuario.click(screen.getByRole("button", { name: "Ajuste" }));
+
+    expect(await screen.findByText("Saldo atual do sistema: 20")).toBeInTheDocument();
+    expect(screen.getByLabelText("Quantidade contada")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Quantidade")).not.toBeInTheDocument();
+  });
+
+  it("submeter na aba Ajuste chama registrarAjuste com quantidadeContada (não 'quantidade')", async () => {
+    mockarCarregamentoInicial();
+    vi.spyOn(movimentacoesApi, "registrarAjuste").mockResolvedValue(undefined);
+    const usuario = userEvent.setup();
+    renderPagina();
+
+    await screen.findByLabelText("Localização de destino");
+    await usuario.click(screen.getByRole("button", { name: "Ajuste" }));
+    await screen.findByText("Saldo atual do sistema: 20");
+
+    await usuario.clear(screen.getByLabelText("Quantidade contada"));
+    await usuario.type(screen.getByLabelText("Quantidade contada"), "15");
+    await usuario.click(screen.getByRole("button", { name: "Registrar ajuste" }));
+
+    await waitFor(() =>
+      expect(movimentacoesApi.registrarAjuste).toHaveBeenCalledWith({
+        produtoId: "produto-1",
+        localizacaoId: "loc-1",
+        quantidadeContada: 15,
+        usuarioId: "usuario-1",
+      }),
+    );
+    expect(await screen.findByText("Ajuste registrado e saldo corrigido.")).toBeInTheDocument();
   });
 });

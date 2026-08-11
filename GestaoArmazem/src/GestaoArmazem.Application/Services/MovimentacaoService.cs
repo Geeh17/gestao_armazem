@@ -123,4 +123,54 @@ public class MovimentacaoService : IMovimentacaoService
             throw;
         }
     }
+
+    public async Task RegistrarAjusteAsync(AjusteEstoqueDto dto)
+    {
+        await _unitOfWork.IniciarTransacaoAsync();
+        try
+        {
+            var estoqueAtual = await _estoqueRepository.ObterAsync(dto.ProdutoId, dto.LocalizacaoId);
+            var saldoAtual = estoqueAtual?.Quantidade ?? 0;
+            var delta = dto.QuantidadeContada - saldoAtual;
+
+            if (delta == 0)
+            {
+                // Contagem bate com o saldo atual — nada a corrigir, nenhuma movimentação registrada.
+                await _unitOfWork.ConfirmarAsync();
+                return;
+            }
+
+            var movimentacao = new MovimentacaoEstoque
+            {
+                Id = Guid.NewGuid(),
+                ProdutoId = dto.ProdutoId,
+                Quantidade = Math.Abs(delta),
+                Tipo = TipoMovimentacao.Ajuste,
+                Data = DateTime.UtcNow,
+                UsuarioId = dto.UsuarioId
+            };
+
+            if (delta > 0)
+            {
+                // Contagem física maior que o sistema — crédito, mesma semântica de uma entrada.
+                await _estoqueRepository.IncrementarAsync(dto.ProdutoId, dto.LocalizacaoId, delta);
+                movimentacao.LocalizacaoDestinoId = dto.LocalizacaoId;
+            }
+            else
+            {
+                // Contagem física menor que o sistema — débito, mesma semântica de uma saída.
+                // Nunca falha por saldo insuficiente: |delta| <= saldoAtual por construção.
+                await _estoqueRepository.TentarDecrementarAsync(dto.ProdutoId, dto.LocalizacaoId, -delta);
+                movimentacao.LocalizacaoOrigemId = dto.LocalizacaoId;
+            }
+
+            await _movimentacaoRepository.RegistrarAsync(movimentacao);
+            await _unitOfWork.ConfirmarAsync();
+        }
+        catch
+        {
+            await _unitOfWork.DesfazerAsync();
+            throw;
+        }
+    }
 }

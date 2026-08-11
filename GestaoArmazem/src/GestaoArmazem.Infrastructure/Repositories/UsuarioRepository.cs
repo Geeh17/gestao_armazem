@@ -41,4 +41,19 @@ public class UsuarioRepository : IUsuarioRepository
         _sql.Connection.ExecuteAsync(
             "UPDATE Usuario SET SenhaHash = @SenhaHash WHERE Id = @Id",
             new { Id = usuarioId, SenhaHash = novaSenhaHash }, _sql.Transaction);
+
+    public Task AtualizarAsync(Usuario usuario)
+    {
+        const string sql = "UPDATE Usuario SET Nome = @Nome, Email = @Email, PerfilId = @PerfilId WHERE Id = @Id";
+        return _sql.Connection.ExecuteAsync(sql, usuario, _sql.Transaction);
+    }
+
+    public async Task<bool> PossuiReferenciasAsync(Guid id)
+    {
+        const string sql = "SELECT CASE WHEN EXISTS (SELECT 1 FROM MovimentacaoEstoque WHERE UsuarioId = @Id) THEN 1 ELSE 0 END";
+        return await _sql.Connection.ExecuteScalarAsync<bool>(sql, new { Id = id }, _sql.Transaction);
+    }
+
+    public Task ExcluirAsync(Guid id) =>
+        _sql.Connection.ExecuteAsync("DELETE FROM Usuario WHERE Id = @Id", new { Id = id }, _sql.Transaction);
 }

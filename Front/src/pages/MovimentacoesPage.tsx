@@ -2,7 +2,13 @@ import { useEffect, useState, type FormEvent } from "react";
 import { listarProdutos } from "@/api/produtos";
 import { listarLocalizacoes, type Localizacao } from "@/api/localizacoes";
 import { listarArmazens, type Armazem } from "@/api/armazens";
-import { registrarEntrada, registrarSaida, registrarTransferencia } from "@/api/movimentacoes";
+import {
+  registrarAjuste,
+  registrarEntrada,
+  registrarSaida,
+  registrarTransferencia,
+} from "@/api/movimentacoes";
+import { consultarEstoquePorProduto } from "@/api/estoque";
 import { ApiError } from "@/api/client";
 import { useAuth } from "@/context/AuthContext";
 import type { Produto } from "@/types/produto";
@@ -11,12 +17,13 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 
-type Tipo = "entrada" | "saida" | "transferencia";
+type Tipo = "entrada" | "saida" | "transferencia" | "ajuste";
 
 const TABS: { tipo: Tipo; label: string }[] = [
   { tipo: "entrada", label: "Entrada" },
   { tipo: "saida", label: "Saída" },
   { tipo: "transferencia", label: "Transferência" },
+  { tipo: "ajuste", label: "Ajuste" },
 ];
 
 export function MovimentacoesPage() {
@@ -32,6 +39,8 @@ export function MovimentacoesPage() {
   const [localizacaoOrigemId, setLocalizacaoOrigemId] = useState("");
   const [localizacaoDestinoId, setLocalizacaoDestinoId] = useState("");
   const [quantidade, setQuantidade] = useState(1);
+  const [quantidadeContada, setQuantidadeContada] = useState(0);
+  const [saldoAtual, setSaldoAtual] = useState<number | null>(null);
 
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState<string | null>(null);
@@ -52,6 +61,22 @@ export function MovimentacoesPage() {
       })
       .catch(() => setErro("Não foi possível carregar produtos e localizações."));
   }, []);
+
+  // Na aba Ajuste, mostra o saldo atual do produto na localização escolhida —
+  // só um apoio visual, quem decide o valor final é sempre o usuário.
+  useEffect(() => {
+    if (tipo !== "ajuste" || !produtoId || !localizacaoId) {
+      setSaldoAtual(null);
+      return;
+    }
+
+    consultarEstoquePorProduto(produtoId)
+      .then((saldos) => {
+        const saldo = saldos.find((s) => s.localizacaoId === localizacaoId);
+        setSaldoAtual(saldo?.quantidade ?? 0);
+      })
+      .catch(() => setSaldoAtual(null));
+  }, [tipo, produtoId, localizacaoId]);
 
   function trocarAba(novaAba: Tipo) {
     setTipo(novaAba);
@@ -77,7 +102,7 @@ export function MovimentacoesPage() {
       } else if (tipo === "saida") {
         await registrarSaida({ produtoId, localizacaoId, quantidade, usuarioId });
         setSucesso("Saída registrada e saldo atualizado.");
-      } else {
+      } else if (tipo === "transferencia") {
         await registrarTransferencia({
           produtoId,
           localizacaoOrigemId,
@@ -86,6 +111,10 @@ export function MovimentacoesPage() {
           usuarioId,
         });
         setSucesso("Transferência registrada.");
+      } else {
+        await registrarAjuste({ produtoId, localizacaoId, quantidadeContada, usuarioId });
+        setSucesso("Ajuste registrado e saldo corrigido.");
+        setSaldoAtual(quantidadeContada);
       }
       setQuantidade(1);
     } catch (err) {
@@ -125,7 +154,9 @@ export function MovimentacoesPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-xl font-semibold text-ink">Movimentações</h1>
-        <p className="text-sm text-muted">Registre entradas, saídas e transferências de estoque.</p>
+        <p className="text-sm text-muted">
+          Registre entradas, saídas, transferências e ajustes de estoque.
+        </p>
       </div>
 
       <div className="flex gap-1 border-b border-border">
@@ -184,14 +215,38 @@ export function MovimentacoesPage() {
           </>
         )}
 
-        <Input
-          label="Quantidade"
-          type="number"
-          min={1}
-          value={quantidade}
-          onChange={(e) => setQuantidade(Number(e.target.value))}
-          required
-        />
+        {tipo === "ajuste" && (
+          <Select label="Localização" value={localizacaoId} onChange={(e) => setLocalizacaoId(e.target.value)} required>
+            {localizacaoOptions()}
+          </Select>
+        )}
+
+        {tipo !== "ajuste" && (
+          <Input
+            label="Quantidade"
+            type="number"
+            min={1}
+            value={quantidade}
+            onChange={(e) => setQuantidade(Number(e.target.value))}
+            required
+          />
+        )}
+
+        {tipo === "ajuste" && (
+          <>
+            <p className="-mb-2 text-xs text-muted">
+              {saldoAtual === null ? "Saldo atual: —" : `Saldo atual do sistema: ${saldoAtual}`}
+            </p>
+            <Input
+              label="Quantidade contada"
+              type="number"
+              min={0}
+              value={quantidadeContada}
+              onChange={(e) => setQuantidadeContada(Number(e.target.value))}
+              required
+            />
+          </>
+        )}
 
         {erro && <Alert>{erro}</Alert>}
         {sucesso && <Alert variant="success">{sucesso}</Alert>}

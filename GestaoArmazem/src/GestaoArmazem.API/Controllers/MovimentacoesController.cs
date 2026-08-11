@@ -40,4 +40,12 @@ public class MovimentacoesController : ControllerBase
         await _movimentacaoService.RegistrarTransferenciaAsync(dto);
         return NoContent();
     }
+
+    /// <summary>Corrige o saldo para o valor contado numa conferência de inventário.</summary>
+    [HttpPost("ajuste")]
+    public async Task<IActionResult> RegistrarAjuste([FromBody] AjusteEstoqueDto dto)
+    {
+        await _movimentacaoService.RegistrarAjusteAsync(dto);
+        return NoContent();
+    }
 }

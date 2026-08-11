@@ -36,3 +36,14 @@ public class MovimentacaoTransferenciaDtoValidator : AbstractValidator<Movimenta
             .WithMessage("A localização de origem deve ser diferente da localização de destino.");
     }
 }
+
+public class AjusteEstoqueDtoValidator : AbstractValidator<AjusteEstoqueDto>
+{
+    public AjusteEstoqueDtoValidator()
+    {
+        RuleFor(a => a.ProdutoId).NotEmpty();
+        RuleFor(a => a.LocalizacaoId).NotEmpty();
+        RuleFor(a => a.QuantidadeContada).GreaterThanOrEqualTo(0)
+            .WithMessage("A quantidade contada não pode ser negativa.");
+    }
+}

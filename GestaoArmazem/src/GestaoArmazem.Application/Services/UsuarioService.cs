@@ -56,6 +56,49 @@ public class UsuarioService : IUsuarioService
         return new UsuarioDto(usuario.Id, usuario.Nome, usuario.Email, usuario.PerfilId, perfil.Nome);
     }
 
+    public async Task<UsuarioDto> AtualizarAsync(Guid id, AtualizarUsuarioDto dto)
+    {
+        var usuario = await _usuarioRepository.ObterPorIdAsync(id)
+            ?? throw new NotFoundException("Usuário", id);
+
+        var existenteComEmail = await _usuarioRepository.ObterPorEmailAsync(dto.Email);
+        if (existenteComEmail is not null && existenteComEmail.Id != id)
+        {
+            throw new InvalidOperationException($"Já existe um usuário cadastrado com o email '{dto.Email}'.");
+        }
+
+        var perfil = await _perfilRepository.ObterPorIdAsync(dto.PerfilId)
+            ?? throw new NotFoundException("Perfil", dto.PerfilId);
+
+        usuario.Nome = dto.Nome;
+        usuario.Email = dto.Email;
+        usuario.PerfilId = dto.PerfilId;
+
+        await _usuarioRepository.AtualizarAsync(usuario);
+        return new UsuarioDto(usuario.Id, usuario.Nome, usuario.Email, usuario.PerfilId, perfil.Nome);
+    }
+
+    public async Task ExcluirAsync(Guid id)
+    {
+        _ = await _usuarioRepository.ObterPorIdAsync(id) ?? throw new NotFoundException("Usuário", id);
+
+        if (await _usuarioRepository.PossuiReferenciasAsync(id))
+        {
+            throw new InvalidOperationException(
+                "Este usuário não pode ser excluído porque já registrou movimentações de estoque.");
+        }
+
+        await _usuarioRepository.ExcluirAsync(id);
+    }
+
+    public async Task ResetarSenhaAsync(Guid usuarioId, ResetarSenhaDto dto)
+    {
+        _ = await _usuarioRepository.ObterPorIdAsync(usuarioId) ?? throw new NotFoundException("Usuário", usuarioId);
+
+        var novoHash = _passwordHasher.Hash(dto.NovaSenha);
+        await _usuarioRepository.AtualizarSenhaHashAsync(usuarioId, novoHash);
+    }
+
     public async Task AlterarSenhaAsync(Guid usuarioId, AlterarSenhaDto dto)
     {
         var usuario = await _usuarioRepository.ObterPorIdAsync(usuarioId)

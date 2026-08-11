@@ -7,6 +7,7 @@ import { LoginPage } from "@/pages/LoginPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { ProdutosListPage } from "@/pages/ProdutosListPage";
 import { ProdutoFormPage } from "@/pages/ProdutoFormPage";
+import { CategoriasPage } from "@/pages/CategoriasPage";
 import { EstoquePage } from "@/pages/EstoquePage";
 import { MovimentacoesPage } from "@/pages/MovimentacoesPage";
 import { FornecedoresPage } from "@/pages/FornecedoresPage";
@@ -36,6 +37,7 @@ export default function App() {
             <Route path="/produtos" element={<ProdutosListPage />} />
             <Route path="/produtos/novo" element={<ProdutoFormPage />} />
             <Route path="/produtos/:id/editar" element={<ProdutoFormPage />} />
+            <Route path="/categorias" element={<CategoriasPage />} />
             <Route path="/estoque" element={<EstoquePage />} />
             <Route path="/movimentacoes" element={<MovimentacoesPage />} />
             <Route path="/fornecedores" element={<FornecedoresPage />} />

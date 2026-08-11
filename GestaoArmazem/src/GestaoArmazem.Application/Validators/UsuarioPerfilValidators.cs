@@ -23,6 +23,25 @@ public class CriarUsuarioDtoValidator : AbstractValidator<CriarUsuarioDto>
     }
 }
 
+public class AtualizarUsuarioDtoValidator : AbstractValidator<AtualizarUsuarioDto>
+{
+    public AtualizarUsuarioDtoValidator()
+    {
+        RuleFor(u => u.Nome).NotEmpty().MaximumLength(150);
+        RuleFor(u => u.Email).NotEmpty().EmailAddress().MaximumLength(200);
+        RuleFor(u => u.PerfilId).NotEmpty();
+    }
+}
+
+public class ResetarSenhaDtoValidator : AbstractValidator<ResetarSenhaDto>
+{
+    public ResetarSenhaDtoValidator()
+    {
+        RuleFor(r => r.NovaSenha).NotEmpty().MinimumLength(8)
+            .WithMessage("A nova senha deve ter ao menos 8 caracteres.");
+    }
+}
+
 public class AlterarSenhaDtoValidator : AbstractValidator<AlterarSenhaDto>
 {
     public AlterarSenhaDtoValidator()

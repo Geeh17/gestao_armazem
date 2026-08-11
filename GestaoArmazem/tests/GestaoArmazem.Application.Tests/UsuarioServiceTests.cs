@@ -92,4 +92,80 @@ public class UsuarioServiceTests
 
         _usuarioRepository.Verify(r => r.AtualizarSenhaHashAsync(usuarioId, "hash-novo"), Times.Once);
     }
+
+    [Fact]
+    public async Task AtualizarAsync_ComEmailJaUsadoPorOutroUsuario_DeveLancarInvalidOperationException()
+    {
+        var usuarioId = Guid.NewGuid();
+        var outroUsuarioId = Guid.NewGuid();
+        var dto = new AtualizarUsuarioDto("Ana", "ana@teste.com", Guid.NewGuid());
+
+        _usuarioRepository.Setup(r => r.ObterPorIdAsync(usuarioId))
+            .ReturnsAsync(new Usuario { Id = usuarioId, Email = "ana.antigo@teste.com" });
+        _usuarioRepository.Setup(r => r.ObterPorEmailAsync(dto.Email))
+            .ReturnsAsync(new Usuario { Id = outroUsuarioId, Email = dto.Email });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.AtualizarAsync(usuarioId, dto));
+
+        _usuarioRepository.Verify(r => r.AtualizarAsync(It.IsAny<Usuario>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AtualizarAsync_MantendoOProprioEmail_NaoDeveLancarErro()
+    {
+        var usuarioId = Guid.NewGuid();
+        var perfilId = Guid.NewGuid();
+        var dto = new AtualizarUsuarioDto("Ana Editada", "ana@teste.com", perfilId);
+
+        _usuarioRepository.Setup(r => r.ObterPorIdAsync(usuarioId))
+            .ReturnsAsync(new Usuario { Id = usuarioId, Email = "ana@teste.com" });
+        // O próprio usuário "possui" o email — não deve ser tratado como conflito.
+        _usuarioRepository.Setup(r => r.ObterPorEmailAsync(dto.Email))
+            .ReturnsAsync(new Usuario { Id = usuarioId, Email = dto.Email });
+        _perfilRepository.Setup(r => r.ObterPorIdAsync(perfilId)).ReturnsAsync(new Perfil { Id = perfilId, Nome = "Administrador" });
+
+        var resultado = await _sut.AtualizarAsync(usuarioId, dto);
+
+        Assert.Equal("Ana Editada", resultado.Nome);
+        _usuarioRepository.Verify(r => r.AtualizarAsync(It.IsAny<Usuario>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExcluirAsync_ComMovimentacoesRegistradas_DeveLancarInvalidOperationException()
+    {
+        var usuarioId = Guid.NewGuid();
+        _usuarioRepository.Setup(r => r.ObterPorIdAsync(usuarioId)).ReturnsAsync(new Usuario { Id = usuarioId });
+        _usuarioRepository.Setup(r => r.PossuiReferenciasAsync(usuarioId)).ReturnsAsync(true);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.ExcluirAsync(usuarioId));
+
+        _usuarioRepository.Verify(r => r.ExcluirAsync(It.IsAny<Guid>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ExcluirAsync_SemMovimentacoes_DeveExcluir()
+    {
+        var usuarioId = Guid.NewGuid();
+        _usuarioRepository.Setup(r => r.ObterPorIdAsync(usuarioId)).ReturnsAsync(new Usuario { Id = usuarioId });
+        _usuarioRepository.Setup(r => r.PossuiReferenciasAsync(usuarioId)).ReturnsAsync(false);
+
+        await _sut.ExcluirAsync(usuarioId);
+
+        _usuarioRepository.Verify(r => r.ExcluirAsync(usuarioId), Times.Once);
+    }
+
+    [Fact]
+    public async Task ResetarSenhaAsync_NaoExigeSenhaAtual_ApenasHasheiaEAtualiza()
+    {
+        var usuarioId = Guid.NewGuid();
+        var dto = new ResetarSenhaDto("nova-senha-provisoria");
+
+        _usuarioRepository.Setup(r => r.ObterPorIdAsync(usuarioId)).ReturnsAsync(new Usuario { Id = usuarioId });
+        _passwordHasher.Setup(h => h.Hash(dto.NovaSenha)).Returns("hash-resetado");
+
+        await _sut.ResetarSenhaAsync(usuarioId, dto);
+
+        _usuarioRepository.Verify(r => r.AtualizarSenhaHashAsync(usuarioId, "hash-resetado"), Times.Once);
+        _passwordHasher.Verify(h => h.Verificar(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
 }

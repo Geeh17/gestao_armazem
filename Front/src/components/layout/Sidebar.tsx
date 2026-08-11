@@ -11,6 +11,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { to: "/", label: "Visão geral", icon: "🏠" },
   { to: "/produtos", label: "Produtos", icon: "📦" },
+  { to: "/categorias", label: "Categorias", icon: "🏷️" },
   { to: "/armazens", label: "Armazéns", icon: "🏢" },
   { to: "/localizacoes", label: "Localizações", icon: "📍" },
   { to: "/estoque", label: "Estoque", icon: "📊" },

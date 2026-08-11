@@ -18,3 +18,10 @@ public record MovimentacaoTransferenciaDto(
     Guid LocalizacaoDestinoId,
     int Quantidade,
     Guid UsuarioId);
+
+/// <summary>Corrige o saldo para o valor exatamente contado (inventário físico) — não é um delta.</summary>
+public record AjusteEstoqueDto(
+    Guid ProdutoId,
+    Guid LocalizacaoId,
+    int QuantidadeContada,
+    Guid UsuarioId);

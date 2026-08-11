@@ -1,6 +1,8 @@
 using GestaoArmazem.Application.DTOs;
 using GestaoArmazem.Application.Exceptions;
 using GestaoArmazem.Application.Services;
+using GestaoArmazem.Domain.Entities;
+using GestaoArmazem.Domain.Enums;
 using GestaoArmazem.Domain.Interfaces;
 using Moq;
 using Xunit;
@@ -90,5 +92,73 @@ public class MovimentacaoServiceTests
 
         _estoqueRepository.Verify(r => r.IncrementarAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>()), Times.Never);
         _unitOfWork.Verify(u => u.DesfazerAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task RegistrarAjusteAsync_ContagemMaiorQueOSaldo_DeveCreditarADiferenca()
+    {
+        var dto = new AjusteEstoqueDto(Guid.NewGuid(), Guid.NewGuid(), 30, Guid.NewGuid());
+        _estoqueRepository
+            .Setup(r => r.ObterAsync(dto.ProdutoId, dto.LocalizacaoId))
+            .ReturnsAsync(new Estoque { ProdutoId = dto.ProdutoId, LocalizacaoId = dto.LocalizacaoId, Quantidade = 20 });
+
+        await _sut.RegistrarAjusteAsync(dto);
+
+        _estoqueRepository.Verify(r => r.IncrementarAsync(dto.ProdutoId, dto.LocalizacaoId, 10), Times.Once);
+        _estoqueRepository.Verify(r => r.TentarDecrementarAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>()), Times.Never);
+        _movimentacaoRepository.Verify(
+            r => r.RegistrarAsync(It.Is<Domain.Entities.MovimentacaoEstoque>(m =>
+                m.Tipo == TipoMovimentacao.Ajuste && m.Quantidade == 10 && m.LocalizacaoDestinoId == dto.LocalizacaoId)),
+            Times.Once);
+        _unitOfWork.Verify(u => u.ConfirmarAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task RegistrarAjusteAsync_ContagemMenorQueOSaldo_DeveDebitarADiferenca()
+    {
+        var dto = new AjusteEstoqueDto(Guid.NewGuid(), Guid.NewGuid(), 5, Guid.NewGuid());
+        _estoqueRepository
+            .Setup(r => r.ObterAsync(dto.ProdutoId, dto.LocalizacaoId))
+            .ReturnsAsync(new Estoque { ProdutoId = dto.ProdutoId, LocalizacaoId = dto.LocalizacaoId, Quantidade = 20 });
+        _estoqueRepository
+            .Setup(r => r.TentarDecrementarAsync(dto.ProdutoId, dto.LocalizacaoId, 15))
+            .ReturnsAsync(true);
+
+        await _sut.RegistrarAjusteAsync(dto);
+
+        _estoqueRepository.Verify(r => r.TentarDecrementarAsync(dto.ProdutoId, dto.LocalizacaoId, 15), Times.Once);
+        _movimentacaoRepository.Verify(
+            r => r.RegistrarAsync(It.Is<Domain.Entities.MovimentacaoEstoque>(m =>
+                m.Tipo == TipoMovimentacao.Ajuste && m.Quantidade == 15 && m.LocalizacaoOrigemId == dto.LocalizacaoId)),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task RegistrarAjusteAsync_ContagemIgualAoSaldo_NaoDeveMovimentarNada()
+    {
+        var dto = new AjusteEstoqueDto(Guid.NewGuid(), Guid.NewGuid(), 20, Guid.NewGuid());
+        _estoqueRepository
+            .Setup(r => r.ObterAsync(dto.ProdutoId, dto.LocalizacaoId))
+            .ReturnsAsync(new Estoque { ProdutoId = dto.ProdutoId, LocalizacaoId = dto.LocalizacaoId, Quantidade = 20 });
+
+        await _sut.RegistrarAjusteAsync(dto);
+
+        _estoqueRepository.Verify(r => r.IncrementarAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>()), Times.Never);
+        _estoqueRepository.Verify(r => r.TentarDecrementarAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>()), Times.Never);
+        _movimentacaoRepository.Verify(r => r.RegistrarAsync(It.IsAny<Domain.Entities.MovimentacaoEstoque>()), Times.Never);
+        _unitOfWork.Verify(u => u.ConfirmarAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task RegistrarAjusteAsync_SemSaldoAnterior_TrataComoZero()
+    {
+        var dto = new AjusteEstoqueDto(Guid.NewGuid(), Guid.NewGuid(), 8, Guid.NewGuid());
+        _estoqueRepository
+            .Setup(r => r.ObterAsync(dto.ProdutoId, dto.LocalizacaoId))
+            .ReturnsAsync((Estoque?)null);
+
+        await _sut.RegistrarAjusteAsync(dto);
+
+        _estoqueRepository.Verify(r => r.IncrementarAsync(dto.ProdutoId, dto.LocalizacaoId, 8), Times.Once);
     }
 }

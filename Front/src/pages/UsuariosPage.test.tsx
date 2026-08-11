@@ -78,4 +78,80 @@ describe("UsuariosPage", () => {
       "Já existe um usuário cadastrado com este email.",
     );
   });
+
+  it("edita um usuário existente sem exigir senha, e sem mostrar o campo de senha", async () => {
+    vi.spyOn(usuariosApi, "listarUsuarios").mockResolvedValue(usuarios);
+    vi.spyOn(perfisApi, "listarPerfis").mockResolvedValue(perfis);
+    vi.spyOn(usuariosApi, "atualizarUsuario").mockResolvedValue({} as (typeof usuarios)[0]);
+    const usuario = userEvent.setup();
+    render(<UsuariosPage />);
+
+    await usuario.click(await screen.findByRole("button", { name: "Editar" }));
+
+    expect(screen.getByLabelText("Nome")).toHaveValue("Ana");
+    expect(screen.queryByLabelText("Senha provisória")).not.toBeInTheDocument();
+
+    await usuario.click(screen.getByRole("button", { name: "Salvar alterações" }));
+
+    await waitFor(() =>
+      expect(usuariosApi.atualizarUsuario).toHaveBeenCalledWith("usuario-1", {
+        nome: "Ana",
+        email: "ana@teste.com",
+        perfilId: "perfil-1",
+      }),
+    );
+    expect(await screen.findByText("Usuário atualizado.")).toBeInTheDocument();
+  });
+
+  it("exclui um usuário após confirmação", async () => {
+    vi.spyOn(usuariosApi, "listarUsuarios").mockResolvedValue(usuarios);
+    vi.spyOn(perfisApi, "listarPerfis").mockResolvedValue(perfis);
+    vi.spyOn(usuariosApi, "excluirUsuario").mockResolvedValue(undefined);
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const usuario = userEvent.setup();
+    render(<UsuariosPage />);
+
+    await usuario.click(await screen.findByRole("button", { name: "Excluir" }));
+
+    await waitFor(() => expect(usuariosApi.excluirUsuario).toHaveBeenCalledWith("usuario-1"));
+  });
+
+  it("mostra o erro da API ao excluir um usuário que já registrou movimentações", async () => {
+    vi.spyOn(usuariosApi, "listarUsuarios").mockResolvedValue(usuarios);
+    vi.spyOn(perfisApi, "listarPerfis").mockResolvedValue(perfis);
+    vi.spyOn(usuariosApi, "excluirUsuario").mockRejectedValue(
+      new ApiError("Este usuário não pode ser excluído porque já registrou movimentações de estoque.", 409),
+    );
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const usuario = userEvent.setup();
+    render(<UsuariosPage />);
+
+    await usuario.click(await screen.findByRole("button", { name: "Excluir" }));
+
+    expect(
+      await screen.findByText(
+        "Este usuário não pode ser excluído porque já registrou movimentações de estoque.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("redefine a senha de um usuário via prompt, sem chamar a API se o prompt for cancelado", async () => {
+    vi.spyOn(usuariosApi, "listarUsuarios").mockResolvedValue(usuarios);
+    vi.spyOn(perfisApi, "listarPerfis").mockResolvedValue(perfis);
+    const resetarSpy = vi.spyOn(usuariosApi, "resetarSenhaUsuario").mockResolvedValue(undefined);
+    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue(null);
+    const usuario = userEvent.setup();
+    render(<UsuariosPage />);
+
+    await usuario.click(await screen.findByRole("button", { name: "Redefinir senha" }));
+    expect(resetarSpy).not.toHaveBeenCalled();
+
+    promptSpy.mockReturnValue("nova-senha-123");
+    await usuario.click(screen.getByRole("button", { name: "Redefinir senha" }));
+
+    await waitFor(() =>
+      expect(resetarSpy).toHaveBeenCalledWith("usuario-1", "nova-senha-123"),
+    );
+    expect(await screen.findByText(/Senha de Ana redefinida/)).toBeInTheDocument();
+  });
 });

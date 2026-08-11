@@ -22,4 +22,24 @@ public class CategoriasController : ControllerBase
     {
         return Ok(await _categoriaService.ListarAsync());
     }
+
+    [HttpPost]
+    public async Task<ActionResult<CategoriaDto>> Criar([FromBody] CriarCategoriaDto dto)
+    {
+        var categoria = await _categoriaService.CriarAsync(dto);
+        return CreatedAtAction(nameof(Listar), categoria);
+    }
+
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<CategoriaDto>> Atualizar(Guid id, [FromBody] AtualizarCategoriaDto dto)
+    {
+        return Ok(await _categoriaService.AtualizarAsync(id, dto));
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Excluir(Guid id)
+    {
+        await _categoriaService.ExcluirAsync(id);
+        return NoContent();
+    }
 }
