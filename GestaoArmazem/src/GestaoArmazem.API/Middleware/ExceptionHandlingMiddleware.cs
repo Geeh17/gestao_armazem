@@ -32,6 +32,7 @@ public class ExceptionHandlingMiddleware
             {
                 ValidationException validationEx => (HttpStatusCode.BadRequest, string.Join(" ", validationEx.Errors.Select(e => e.ErrorMessage))),
                 CredenciaisInvalidasException => (HttpStatusCode.Unauthorized, ex.Message),
+                RefreshTokenInvalidoException => (HttpStatusCode.Unauthorized, ex.Message),
                 SaldoInsuficienteException => (HttpStatusCode.UnprocessableEntity, ex.Message),
                 NotFoundException => (HttpStatusCode.NotFound, ex.Message),
                 InvalidOperationException => (HttpStatusCode.Conflict, ex.Message),

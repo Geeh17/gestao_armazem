@@ -24,7 +24,7 @@ describe("AuthContext", () => {
       name: "Ana Gestora",
       role: "Gestor de Estoque",
     });
-    vi.spyOn(authApi, "login").mockResolvedValue({ token, expiraEm: "2026-01-01T00:00:00Z" });
+    vi.spyOn(authApi, "login").mockResolvedValue({ token, expiraEm: "2026-01-01T00:00:00Z", refreshToken: "refresh-fake" });
 
     const { result } = renderHook(() => useAuth(), { wrapper });
 
@@ -41,7 +41,7 @@ describe("AuthContext", () => {
 
   it("isAdmin só é true quando o role do token é exatamente 'Administrador'", async () => {
     const token = montarToken({ sub: "usuario-2", role: "Administrador" });
-    vi.spyOn(authApi, "login").mockResolvedValue({ token, expiraEm: "2026-01-01T00:00:00Z" });
+    vi.spyOn(authApi, "login").mockResolvedValue({ token, expiraEm: "2026-01-01T00:00:00Z", refreshToken: "refresh-fake" });
 
     const { result } = renderHook(() => useAuth(), { wrapper });
 
@@ -68,7 +68,8 @@ describe("AuthContext", () => {
 
   it("logout limpa o estado de autenticação", async () => {
     const token = montarToken({ sub: "usuario-1", role: "Administrador" });
-    vi.spyOn(authApi, "login").mockResolvedValue({ token, expiraEm: "2026-01-01T00:00:00Z" });
+    vi.spyOn(authApi, "login").mockResolvedValue({ token, expiraEm: "2026-01-01T00:00:00Z", refreshToken: "refresh-fake" });
+    const logoutSpy = vi.spyOn(authApi, "logout").mockResolvedValue(undefined);
 
     const { result } = renderHook(() => useAuth(), { wrapper });
 
@@ -81,6 +82,7 @@ describe("AuthContext", () => {
       result.current.logout();
     });
 
+    expect(logoutSpy).toHaveBeenCalledWith("refresh-fake");
     expect(result.current.isAuthenticated).toBe(false);
     expect(result.current.usuarioId).toBeNull();
     expect(localStorage.getItem("gestaoarmazem:token")).toBeNull();

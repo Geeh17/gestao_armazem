@@ -147,7 +147,8 @@ public class MovimentacaoService : IMovimentacaoService
                 Quantidade = Math.Abs(delta),
                 Tipo = TipoMovimentacao.Ajuste,
                 Data = DateTime.UtcNow,
-                UsuarioId = dto.UsuarioId
+                UsuarioId = dto.UsuarioId,
+                Motivo = dto.Motivo
             };
 
             if (delta > 0)

@@ -27,6 +27,22 @@ public class AuthController : ControllerBase
         return Ok(resultado);
     }
 
+    /// <summary>Renova o access token usando um refresh token válido (rotação: o token usado é revogado).</summary>
+    [HttpPost("refresh")]
+    public async Task<ActionResult<TokenResponseDto>> Refresh([FromBody] RefreshTokenRequestDto dto)
+    {
+        var resultado = await _authService.RefreshAsync(dto);
+        return Ok(resultado);
+    }
+
+    /// <summary>Revoga o refresh token — encerra a sessão nesse dispositivo.</summary>
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout([FromBody] RefreshTokenRequestDto dto)
+    {
+        await _authService.LogoutAsync(dto);
+        return NoContent();
+    }
+
     /// <summary>Troca a senha do usuário logado (exige a senha atual).</summary>
     [HttpPost("alterar-senha")]
     [Authorize]

@@ -9,6 +9,9 @@ namespace GestaoArmazem.Application.Interfaces;
 public interface IJwtTokenGenerator
 {
     (string Token, DateTime ExpiraEm) GerarToken(Usuario usuario, string nomePerfil);
+
+    /// <summary>Gera uma string aleatória segura para usar como refresh token, com sua data de expiração.</summary>
+    (string Token, DateTime ExpiraEm) GerarRefreshToken();
 }
 
 /// <summary>

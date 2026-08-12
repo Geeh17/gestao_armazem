@@ -19,9 +19,9 @@ public class MovimentacaoEstoqueRepository : IMovimentacaoEstoqueRepository
         // RN02: tabela somente-inserção — não existe UPDATE/DELETE para esta entidade.
         const string sql = @"
             INSERT INTO MovimentacaoEstoque
-                (Id, ProdutoId, LocalizacaoOrigemId, LocalizacaoDestinoId, Quantidade, Tipo, Data, UsuarioId)
+                (Id, ProdutoId, LocalizacaoOrigemId, LocalizacaoDestinoId, Quantidade, Tipo, Data, UsuarioId, Motivo)
             VALUES
-                (@Id, @ProdutoId, @LocalizacaoOrigemId, @LocalizacaoDestinoId, @Quantidade, @Tipo, @Data, @UsuarioId)";
+                (@Id, @ProdutoId, @LocalizacaoOrigemId, @LocalizacaoDestinoId, @Quantidade, @Tipo, @Data, @UsuarioId, @Motivo)";
 
         await _sql.Connection.ExecuteAsync(sql, movimentacao, _sql.Transaction);
         return movimentacao.Id;

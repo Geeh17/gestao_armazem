@@ -24,7 +24,7 @@ function renderLoginPage() {
 describe("LoginPage", () => {
   it("faz login com sucesso e navega para a tela inicial", async () => {
     const token = montarTokenFake({ sub: "usuario-1", role: "Administrador" });
-    vi.spyOn(authApi, "login").mockResolvedValue({ token, expiraEm: "2026-01-01T00:00:00Z" });
+    vi.spyOn(authApi, "login").mockResolvedValue({ token, expiraEm: "2026-01-01T00:00:00Z", refreshToken: "refresh-fake" });
     const usuario = userEvent.setup();
 
     renderLoginPage();

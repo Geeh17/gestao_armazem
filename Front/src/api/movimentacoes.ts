@@ -28,6 +28,7 @@ export interface AjusteEstoqueRequest {
   localizacaoId: string;
   quantidadeContada: number;
   usuarioId: string;
+  motivo?: string | null;
 }
 
 export function registrarEntrada(dto: MovimentacaoEntradaRequest): Promise<void> {

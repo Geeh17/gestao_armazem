@@ -6,4 +6,5 @@ export interface LoginRequest {
 export interface TokenResponse {
   token: string;
   expiraEm: string;
+  refreshToken: string;
 }

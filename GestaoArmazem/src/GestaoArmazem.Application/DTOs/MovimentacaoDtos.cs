@@ -24,4 +24,5 @@ public record AjusteEstoqueDto(
     Guid ProdutoId,
     Guid LocalizacaoId,
     int QuantidadeContada,
-    Guid UsuarioId);
+    Guid UsuarioId,
+    string? Motivo = null);

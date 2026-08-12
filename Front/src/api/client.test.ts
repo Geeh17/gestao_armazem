@@ -1,5 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, apiFetch, clearToken, getToken, setToken } from "./client";
+import {
+  ApiError,
+  apiFetch,
+  clearRefreshToken,
+  clearToken,
+  getRefreshToken,
+  getToken,
+  setToken,
+  setTokens,
+} from "./client";
 
 function mockFetchResponse(init: {
   status: number;
@@ -29,6 +38,131 @@ describe("token storage (localStorage)", () => {
     setToken("meu-token-jwt");
     clearToken();
     expect(getToken()).toBeNull();
+  });
+});
+
+describe("refresh token storage (localStorage)", () => {
+  it("guarda e recupera o refresh token separadamente do access token", () => {
+    setTokens("access-token", "refresh-token");
+    expect(getToken()).toBe("access-token");
+    expect(getRefreshToken()).toBe("refresh-token");
+  });
+});
+
+describe("apiFetch — renovação automática em 401", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("renova o token e refaz a chamada original quando a API responde 401", async () => {
+    setTokens("token-expirado", "refresh-valido");
+
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.endsWith("/api/auth/refresh")) {
+        return {
+          status: 200,
+          ok: true,
+          headers: { get: () => "application/json" },
+          json: async () => ({ token: "token-novo", expiraEm: "2026-01-01", refreshToken: "refresh-novo" }),
+        } as unknown as Response;
+      }
+      // Primeira chamada ao endpoint real usa o token antigo -> 401.
+      // Depois da renovação, a segunda chamada usa o token novo -> 200.
+      const usouTokenNovo = getToken() === "token-novo";
+      return {
+        status: usouTokenNovo ? 200 : 401,
+        ok: usouTokenNovo,
+        headers: { get: () => "application/json" },
+        json: async () => (usouTokenNovo ? { ok: true } : { erro: "Token expirado." }),
+      } as unknown as Response;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const resultado = await apiFetch("/api/produtos");
+
+    expect(resultado).toEqual({ ok: true });
+    expect(getToken()).toBe("token-novo");
+    expect(getRefreshToken()).toBe("refresh-novo");
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/api/auth/refresh"),
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  it("sem refresh token salvo, não tenta renovar e propaga o 401 original", async () => {
+    setToken("token-sem-refresh");
+    clearRefreshToken();
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 401,
+      ok: false,
+      headers: { get: () => "application/json" },
+      json: async () => ({ erro: "Não autenticado." }),
+    } as unknown as Response);
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(apiFetch("/api/produtos")).rejects.toMatchObject({ status: 401 });
+    // Só a chamada original — nenhuma tentativa de bater em /api/auth/refresh.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("quando a renovação também falha, propaga o 401 original sem loop infinito", async () => {
+    setTokens("token-expirado", "refresh-tambem-invalido");
+
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.endsWith("/api/auth/refresh")) {
+        return {
+          status: 401,
+          ok: false,
+          headers: { get: () => "application/json" },
+          json: async () => ({ erro: "Sessão expirada." }),
+        } as unknown as Response;
+      }
+      return {
+        status: 401,
+        ok: false,
+        headers: { get: () => "application/json" },
+        json: async () => ({ erro: "Não autenticado." }),
+      } as unknown as Response;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(apiFetch("/api/produtos")).rejects.toMatchObject({ status: 401 });
+    // Uma chamada original + uma tentativa de refresh — sem retry indefinido.
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("duas chamadas simultâneas com 401 compartilham a mesma renovação (só um POST /refresh)", async () => {
+    setTokens("token-expirado", "refresh-valido");
+
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.endsWith("/api/auth/refresh")) {
+        // Renovação um pouco "lenta" de propósito, pra garantir que a segunda
+        // chamada de apiFetch chegue no 401 antes da renovação terminar.
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        return {
+          status: 200,
+          ok: true,
+          headers: { get: () => "application/json" },
+          json: async () => ({ token: "token-novo", expiraEm: "2026-01-01", refreshToken: "refresh-novo" }),
+        } as unknown as Response;
+      }
+      const usouTokenNovo = getToken() === "token-novo";
+      return {
+        status: usouTokenNovo ? 200 : 401,
+        ok: usouTokenNovo,
+        headers: { get: () => "application/json" },
+        json: async () => ({ ok: usouTokenNovo }),
+      } as unknown as Response;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await Promise.all([apiFetch("/api/produtos"), apiFetch("/api/categorias")]);
+
+    const chamadasDeRefresh = fetchMock.mock.calls.filter(([url]) =>
+      String(url).endsWith("/api/auth/refresh"),
+    );
+    expect(chamadasDeRefresh).toHaveLength(1);
   });
 });
 

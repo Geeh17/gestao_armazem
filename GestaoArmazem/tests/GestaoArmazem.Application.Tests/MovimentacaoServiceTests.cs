@@ -97,7 +97,7 @@ public class MovimentacaoServiceTests
     [Fact]
     public async Task RegistrarAjusteAsync_ContagemMaiorQueOSaldo_DeveCreditarADiferenca()
     {
-        var dto = new AjusteEstoqueDto(Guid.NewGuid(), Guid.NewGuid(), 30, Guid.NewGuid());
+        var dto = new AjusteEstoqueDto(Guid.NewGuid(), Guid.NewGuid(), 30, Guid.NewGuid(), "Contagem de inventário");
         _estoqueRepository
             .Setup(r => r.ObterAsync(dto.ProdutoId, dto.LocalizacaoId))
             .ReturnsAsync(new Estoque { ProdutoId = dto.ProdutoId, LocalizacaoId = dto.LocalizacaoId, Quantidade = 20 });
@@ -108,7 +108,8 @@ public class MovimentacaoServiceTests
         _estoqueRepository.Verify(r => r.TentarDecrementarAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>()), Times.Never);
         _movimentacaoRepository.Verify(
             r => r.RegistrarAsync(It.Is<Domain.Entities.MovimentacaoEstoque>(m =>
-                m.Tipo == TipoMovimentacao.Ajuste && m.Quantidade == 10 && m.LocalizacaoDestinoId == dto.LocalizacaoId)),
+                m.Tipo == TipoMovimentacao.Ajuste && m.Quantidade == 10
+                && m.LocalizacaoDestinoId == dto.LocalizacaoId && m.Motivo == "Contagem de inventário")),
             Times.Once);
         _unitOfWork.Verify(u => u.ConfirmarAsync(), Times.Once);
     }

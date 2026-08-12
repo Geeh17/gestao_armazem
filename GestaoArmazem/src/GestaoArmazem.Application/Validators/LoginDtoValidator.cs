@@ -11,3 +11,11 @@ public class LoginDtoValidator : AbstractValidator<LoginDto>
         RuleFor(l => l.Senha).NotEmpty();
     }
 }
+
+public class RefreshTokenRequestDtoValidator : AbstractValidator<RefreshTokenRequestDto>
+{
+    public RefreshTokenRequestDtoValidator()
+    {
+        RuleFor(r => r.RefreshToken).NotEmpty();
+    }
+}

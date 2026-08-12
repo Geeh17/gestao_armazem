@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
-import { login as loginRequest } from "@/api/auth";
-import { clearToken, getToken, setToken } from "@/api/client";
+import { login as loginRequest, logout as logoutRequest } from "@/api/auth";
+import { clearTokens, getRefreshToken, getToken, setTokens } from "@/api/client";
 import { decodeJwt } from "@/lib/jwt";
 
 interface AuthContextValue {
@@ -20,12 +20,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, senha: string) => {
     const resultado = await loginRequest({ email, senha });
-    setToken(resultado.token);
+    setTokens(resultado.token, resultado.refreshToken);
     setTokenState(resultado.token);
   }, []);
 
   const logout = useCallback(() => {
-    clearToken();
+    const refreshToken = getRefreshToken();
+    // Revogação no servidor é best-effort: o usuário não deve ficar preso na
+    // tela esperando a rede, nem ver erro, se a chamada falhar — os tokens já
+    // saem do localStorage de qualquer forma, então a sessão local encerra.
+    if (refreshToken) {
+      logoutRequest(refreshToken).catch(() => {
+        // Ignorado de propósito.
+      });
+    }
+
+    clearTokens();
     setTokenState(null);
   }, []);
 

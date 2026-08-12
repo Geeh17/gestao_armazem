@@ -45,5 +45,6 @@ public class AjusteEstoqueDtoValidator : AbstractValidator<AjusteEstoqueDto>
         RuleFor(a => a.LocalizacaoId).NotEmpty();
         RuleFor(a => a.QuantidadeContada).GreaterThanOrEqualTo(0)
             .WithMessage("A quantidade contada não pode ser negativa.");
+        RuleFor(a => a.Motivo).MaximumLength(300);
     }
 }

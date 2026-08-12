@@ -48,4 +48,17 @@ public class JwtTokenGenerator : IJwtTokenGenerator
 
         return (new JwtSecurityTokenHandler().WriteToken(token), expiraEm);
     }
+
+    public (string Token, DateTime ExpiraEm) GerarRefreshToken()
+    {
+        // 64 bytes de entropia criptográfica, codificados em base64url (sem caracteres
+        // problemáticos em URL/JSON) — não tem relação com o formato JWT, é só um
+        // identificador opaco e imprevisível guardado na tabela RefreshToken.
+        var bytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(64);
+        var token = Convert.ToBase64String(bytes)
+            .Replace('+', '-').Replace('/', '_').Replace("=", "");
+
+        var expiraEm = DateTime.UtcNow.AddDays(_settings.RefreshTokenExpiryDays);
+        return (token, expiraEm);
+    }
 }

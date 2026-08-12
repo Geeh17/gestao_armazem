@@ -16,4 +16,8 @@ public class MovimentacaoEstoque
     public TipoMovimentacao Tipo { get; set; }
     public DateTime Data { get; set; }
     public Guid UsuarioId { get; set; }
+
+    /// <summary>Usado principalmente pelo Ajuste (ex.: "Contagem de inventário", "Produto avariado").
+    /// Nulo para os demais tipos de movimentação.</summary>
+    public string? Motivo { get; set; }
 }

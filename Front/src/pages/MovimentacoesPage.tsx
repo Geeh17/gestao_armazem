@@ -40,6 +40,7 @@ export function MovimentacoesPage() {
   const [localizacaoDestinoId, setLocalizacaoDestinoId] = useState("");
   const [quantidade, setQuantidade] = useState(1);
   const [quantidadeContada, setQuantidadeContada] = useState(0);
+  const [motivo, setMotivo] = useState("");
   const [saldoAtual, setSaldoAtual] = useState<number | null>(null);
 
   const [erro, setErro] = useState<string | null>(null);
@@ -112,11 +113,12 @@ export function MovimentacoesPage() {
         });
         setSucesso("Transferência registrada.");
       } else {
-        await registrarAjuste({ produtoId, localizacaoId, quantidadeContada, usuarioId });
+        await registrarAjuste({ produtoId, localizacaoId, quantidadeContada, usuarioId, motivo: motivo || null });
         setSucesso("Ajuste registrado e saldo corrigido.");
         setSaldoAtual(quantidadeContada);
       }
       setQuantidade(1);
+      setMotivo("");
     } catch (err) {
       setErro(err instanceof ApiError ? err.message : "Não foi possível registrar a movimentação.");
     } finally {
@@ -244,6 +246,12 @@ export function MovimentacoesPage() {
               value={quantidadeContada}
               onChange={(e) => setQuantidadeContada(Number(e.target.value))}
               required
+            />
+            <Input
+              label="Motivo (opcional)"
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              placeholder="ex.: Contagem de inventário, produto avariado"
             />
           </>
         )}

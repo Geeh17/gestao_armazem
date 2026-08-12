@@ -176,8 +176,31 @@ describe("MovimentacoesPage", () => {
         localizacaoId: "loc-1",
         quantidadeContada: 15,
         usuarioId: "usuario-1",
+        motivo: null,
       }),
     );
     expect(await screen.findByText("Ajuste registrado e saldo corrigido.")).toBeInTheDocument();
+  });
+
+  it("o motivo do ajuste é opcional, mas quando preenchido é enviado no payload", async () => {
+    mockarCarregamentoInicial();
+    vi.spyOn(movimentacoesApi, "registrarAjuste").mockResolvedValue(undefined);
+    const usuario = userEvent.setup();
+    renderPagina();
+
+    await screen.findByLabelText("Localização de destino");
+    await usuario.click(screen.getByRole("button", { name: "Ajuste" }));
+    await screen.findByText("Saldo atual do sistema: 20");
+
+    await usuario.clear(screen.getByLabelText("Quantidade contada"));
+    await usuario.type(screen.getByLabelText("Quantidade contada"), "15");
+    await usuario.type(screen.getByLabelText("Motivo (opcional)"), "Contagem de inventário");
+    await usuario.click(screen.getByRole("button", { name: "Registrar ajuste" }));
+
+    await waitFor(() =>
+      expect(movimentacoesApi.registrarAjuste).toHaveBeenCalledWith(
+        expect.objectContaining({ motivo: "Contagem de inventário" }),
+      ),
+    );
   });
 });
