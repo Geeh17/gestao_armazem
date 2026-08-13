@@ -43,6 +43,10 @@ pedidos de recebimento/expedição. Full-stack: API em .NET, front-end em React.
 │       ├── pages/          # Uma página por rota
 │       ├── types/          # Tipos espelhando os DTOs do backend
 │       └── App.tsx         # Definição das rotas
+│       # Não há uma pasta tests/ separada aqui: cada *.test.ts(x) fica ao lado do
+│       # arquivo que testa (ex.: pages/ProdutosListPage.tsx e
+│       # pages/ProdutosListPage.test.tsx no mesmo lugar) — convenção comum em
+│       # projetos Vitest/React, diferente da pasta tests/ à parte do .NET acima.
 │
 └── Documentacao/                            # Documentação técnica completa (Word)
 ```
@@ -222,17 +226,80 @@ Diferente dos testes unitários — que mockam os repositórios e nunca tocam SQ
 os testes de integração pegam bugs de SQL real. Foi assim que um bug de ordem de colunas no
 relatório de estoque baixo passou despercebido pelos testes unitários do back-end.
 
-## Testes
+## Antes de ir para produção
 
-**Back-end**: unitários (`GestaoArmazem.Application.Tests`, xUnit + Moq) cobrindo as regras
-de negócio críticas com os repositórios mockados; integração (`GestaoArmazem.IntegrationTests`)
-contra SQL Server real, ver seção acima.
+Duas checagens de segurança que valem a pena revisar antes de expor essa API além do seu
+ambiente local:
 
-**Front-end** (Vitest + Testing Library, configurado em `Front/vite.config.ts`): cobre toda
-página e componente da aplicação — autenticação, permissões (`isAdmin`, `AdminRoute`,
-`Sidebar`), decodificação do JWT, formatação de localização entre armazéns diferentes,
-paginação, diálogos in-app, e os fluxos de negócio mais delicados (confirmação de recebimento
-item a item, expedição tudo-ou-nada).
+- **`Jwt:SecretKey`**: a API **se recusa a subir** (lança exceção no startup) fora do
+  ambiente `Development` se a chave continuar sendo o placeholder do `appsettings.json`
+  ou tiver menos de 32 caracteres. Defina uma chave forte de verdade via variável de
+  ambiente (`Jwt__SecretKey`) ou um secret store — nunca deixe o valor do
+  `appsettings.json` versionado ser o que roda em produção.
+- **Seed de dados** (`0002_SeedData.sql`) cria um usuário `Administrador` com senha
+  conhecida (`admin@gestaoarmazem.local` / `Admin@123`, documentada neste próprio README).
+  A API só aplica esse script automaticamente em `Development`. Se for inicializar um
+  banco novo manualmente via `GestaoArmazem.Database` (o CLI do DbUp), o seed **não é
+  aplicado por padrão** — é preciso passar `--seed` explicitamente:
+  ```
+  dotnet run --project src/GestaoArmazem.Database -- "<connection string>"          # só schema
+  dotnet run --project src/GestaoArmazem.Database -- "<connection string>" --seed   # schema + seed (dev/local)
+  ```
+  Se algum ambiente fora de local/desenvolvimento acabar com esse usuário, troque a senha
+  (ou exclua o usuário, via `DELETE /api/usuarios/{id}` como Administrador) imediatamente.
+- **CORS**: por padrão a API só aceita requisições de `http://localhost:5173` (config
+  `AllowedOrigins`, sem valor no `appsettings.json`). Fora do seu ambiente local, defina
+  essa configuração com a URL real do front — sem isso, o navegador bloqueia as chamadas
+  mesmo que a API esteja funcionando normalmente.
+
+## Testes do Back-end
+
+**Unitários** (`GestaoArmazem.Application.Tests`, xUnit + Moq): cobrem as regras de negócio
+críticas com os repositórios mockados — nunca tocam banco de dados real.
+
+```
+dotnet test GestaoArmazem/tests/GestaoArmazem.Application.Tests
+```
+
+**Integração** (`GestaoArmazem.IntegrationTests`): contra SQL Server real, sem Docker — ver a
+seção "Observabilidade, Segurança e Testes de Integração" acima para detalhes completos
+(o que está coberto, como configurar outra instância, por que isso importa).
+
+```
+dotnet test GestaoArmazem/tests/GestaoArmazem.IntegrationTests
+```
+
+## Testes do Front-end
+
+Vitest + Testing Library, configurado em `Front/vite.config.ts` (roda em `jsdom`, sem
+depender de nenhum navegador real). **177 testes em 37 arquivos**, cobrindo:
+
+- **As 21 páginas da aplicação** (`src/pages`) — uma por rota, sem exceção: da tela de login
+  até os fluxos mais delicados, como confirmação de recebimento item a item e expedição
+  tudo-ou-nada (RN06).
+- **Componentes de UI** (`src/components/ui`) — Button, Input, Select, Alert, StatusBadge,
+  Pagination.
+- **Layout e permissões** (`src/components/layout`) — `Sidebar` (itens `adminOnly` escondidos
+  para quem não é Administrador), `ProtectedRoute`, `AdminRoute`, `AppShell`.
+- **Contextos** (`src/context`) — `AuthContext` (login/logout/`isAdmin`), `ToastContext`,
+  `DialogContext`.
+- **Bibliotecas utilitárias** (`src/lib`) — decodificação de JWT, formatação de localização
+  entre armazéns diferentes (o código de uma localização só é único dentro do próprio
+  armazém — esse é o caso que mais importa testar).
+- **Client HTTP** (`src/api/client.ts`) — injeção do Bearer token, renovação automática de
+  sessão em respostas 401 (incluindo chamadas simultâneas compartilhando a mesma renovação),
+  tratamento do erro `{ erro: "..." }` do backend.
+
+Rodando (a partir de `Front/`, com as dependências já instaladas):
+
+```
+npm test           # roda uma vez e sai (bom para CI)
+npm run test:watch # fica observando os arquivos
+```
+
+Assim como no back-end, esses testes mockam suas dependências (`fetch`, os módulos de
+`src/api/*`) — não substituem testar a aplicação de ponta a ponta no navegador antes de usar
+em produção, mas pegam regressões de lógica, permissão e formatação sem precisar da API no ar.
 
 ## Design do front-end
 
