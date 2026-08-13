@@ -3,6 +3,7 @@ using GestaoArmazem.Application.DTOs;
 using GestaoArmazem.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace GestaoArmazem.API.Controllers;
 
@@ -19,8 +20,9 @@ public class AuthController : ControllerBase
         _usuarioService = usuarioService;
     }
 
-    /// <summary>Autentica um usuário e retorna o token JWT (RF10).</summary>
+    /// <summary>Autentica um usuário e retorna o token JWT (RF10). Rate limit: 5 tentativas/minuto por IP.</summary>
     [HttpPost("login")]
+    [EnableRateLimiting("login")]
     public async Task<ActionResult<TokenResponseDto>> Login([FromBody] LoginDto dto)
     {
         var resultado = await _authService.LoginAsync(dto);

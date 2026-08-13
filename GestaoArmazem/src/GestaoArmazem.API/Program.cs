@@ -1,12 +1,21 @@
 using System.Text;
+using System.Threading.RateLimiting;
+using GestaoArmazem.API.HealthChecks;
 using GestaoArmazem.API.Middleware;
 using GestaoArmazem.Application;
 using GestaoArmazem.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Logging estruturado (console + arquivo com rotação diária), configurado via
+// appsettings.json (seção "Serilog"). Substitui o logger padrão do ASP.NET Core.
+builder.Host.UseSerilog((context, configuration) =>
+    configuration.ReadFrom.Configuration(context.Configuration));
 
 // Camadas da aplicação (Clean Architecture)
 builder.Services.AddApplication();
@@ -40,6 +49,34 @@ builder.Services
         };
     });
 builder.Services.AddAuthorization();
+
+// Rate limiting no login (RN: mitigar força bruta de senha) — 5 tentativas por
+// minuto, particionado por IP de origem. Aplicado via [EnableRateLimiting("login")]
+// só no endpoint de login; o resto da API não é limitado.
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("login", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "desconhecido",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            new { erro = "Muitas tentativas de login. Aguarde um minuto e tente novamente." },
+            cancellationToken);
+    };
+});
+
+// Health check de conectividade com o banco — GET /health, sem autenticação.
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database");
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -92,10 +129,17 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseSerilogRequestLogging(); // método/path/status/duração de cada requisição
 app.UseHttpsRedirection();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.MapControllers();
+app.MapHealthChecks("/health");
 
 app.Run();
+
+/// <summary>Torna a classe Program (gerada implicitamente pelos top-level statements)
+/// acessível para GestaoArmazem.IntegrationTests via WebApplicationFactory&lt;Program&gt;.</summary>
+public partial class Program;

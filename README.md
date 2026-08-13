@@ -1,20 +1,21 @@
 # Gestão de Armazém
 
-Sistema de gestão de armazém (WMS) — controle de estoque, localizações, movimentações e pedidos de recebimento/expedição.
-Full-stack: API em .NET, front-end em React.
+Sistema de gestão de armazém (WMS) — controle de estoque, localizações, movimentações e
+pedidos de recebimento/expedição. Full-stack: API em .NET, front-end em React.
 
 ## Stack
 
-| Camada          | Tecnologia                                    |
-|-----------------|------------------------------------------------|
-| Back-end        | .NET 8 (Web API)                               |
-| Acesso a dados  | Dapper                                          |
-| Banco de dados  | SQL Server                                      |
-| Migrações       | DbUp (`GestaoArmazem.Database`)                 |
-| Autenticação    | JWT (bcrypt para hash de senha)                 |
-| Front-end       | React 19 + TypeScript, Vite 8                   |
-| Estilização     | Tailwind CSS v4                                 |
-| Testes          | xUnit + Moq (back-end), Vitest + Testing Library (front-end) |
+| Camada         | Tecnologia                                                                                                 |
+| -------------- | ---------------------------------------------------------------------------------------------------------- |
+| Back-end       | .NET 8 (Web API)                                                                                           |
+| Acesso a dados | Dapper                                                                                                     |
+| Banco de dados | SQL Server                                                                                                 |
+| Migrações      | DbUp (`GestaoArmazem.Database`)                                                                            |
+| Autenticação   | JWT + refresh token (bcrypt para hash de senha)                                                            |
+| Logging        | Serilog (console + arquivo)                                                                                |
+| Testes         | xUnit + Moq (back-end), Vitest + Testing Library (front-end), testes de integração contra SQL Server local |
+| Front-end      | React 19 + TypeScript, Vite 8                                                                              |
+| Estilização    | Tailwind CSS v4                                                                                            |
 
 ## Estrutura do repositório
 
@@ -24,19 +25,20 @@ Full-stack: API em .NET, front-end em React.
 │   │   ├── GestaoArmazem.Domain             # Entidades, enums, interfaces de repositório
 │   │   ├── GestaoArmazem.Application        # DTOs, validators, serviços (casos de uso)
 │   │   ├── GestaoArmazem.Infrastructure     # Repositórios Dapper, conexão com o banco
-│   │   ├── GestaoArmazem.API                # Controllers, Program.cs, configuração
+│   │   ├── GestaoArmazem.API                # Controllers, Program.cs, health check, configuração
 │   │   ├── GestaoArmazem.Database           # Runner DbUp: aplica os scripts SQL
 │   │   └── database/scripts                 # Scripts SQL versionados (fonte única de verdade)
 │   └── tests/
-│       └── GestaoArmazem.Application.Tests
+│       ├── GestaoArmazem.Application.Tests  # Unitários (xUnit + Moq, mockam os repositórios)
+│       └── GestaoArmazem.IntegrationTests   # Contra SQL Server real, ponta a ponta via HTTP
 │
 ├── Front/                                    # Front-end (React + TypeScript + Tailwind)
 │   └── src/
 │       ├── api/            # Client HTTP + chamadas por recurso (auth, produtos, ...)
 │       ├── components/
-│       │   ├── layout/     # Sidebar, AppShell, ProtectedRoute
-│       │   └── ui/         # Button, Input, Select, Alert, StatusBadge
-│       ├── context/        # AuthContext (token em localStorage, login/logout)
+│       │   ├── layout/     # Sidebar, AppShell, ProtectedRoute, AdminRoute
+│       │   └── ui/         # Button, Input, Select, Alert, StatusBadge, Pagination
+│       ├── context/        # AuthContext, ToastContext, DialogContext
 │       ├── lib/            # Utilitários (ex.: decodificação de JWT)
 │       ├── pages/          # Uma página por rota
 │       ├── types/          # Tipos espelhando os DTOs do backend
@@ -64,6 +66,7 @@ Full-stack: API em .NET, front-end em React.
    O banco `GestaoArmazem_Dev` é criado e os scripts SQL são aplicados **automaticamente**
    nesse momento via DbUp — não precisa rodar nada manualmente.
 4. A API sobe com Swagger em `/swagger` — confirme que responde antes de seguir pro front.
+   `GET /health` confirma a conectividade com o banco (sem autenticação).
 
 ### 2. Front-end
 
@@ -85,12 +88,21 @@ Full-stack: API em .NET, front-end em React.
 
 ### Rodando os testes
 
-Back-end:
+Back-end (unitários — mockam os repositórios, não tocam banco):
+
 ```
 dotnet test GestaoArmazem/tests/GestaoArmazem.Application.Tests
 ```
 
+Back-end (integração — contra SQL Server real, ver seção "Observabilidade, Segurança e
+Testes de Integração"):
+
+```
+dotnet test GestaoArmazem/tests/GestaoArmazem.IntegrationTests
+```
+
 Front-end (a partir de `Front/`, com as dependências já instaladas):
+
 ```
 npm test          # roda uma vez e sai (bom para CI)
 npm run test:watch  # fica observando os arquivos
@@ -98,13 +110,21 @@ npm run test:watch  # fica observando os arquivos
 
 ## Autenticação
 
-`POST /api/auth/login` recebe `{ "email": "...", "senha": "..." }` e retorna um token JWT.
-O front guarda esse token no `localStorage` e o envia automaticamente como
-`Authorization: Bearer {token}` em toda chamada autenticada. Todos os endpoints da API,
-exceto o login, exigem esse token (`[Authorize]`).
+`POST /api/auth/login` recebe `{ "email": "...", "senha": "..." }` e retorna um access token
+JWT (curta duração, padrão 60 min) **e** um refresh token (padrão 7 dias). O front guarda os
+dois no `localStorage` e envia o access token automaticamente como `Authorization: Bearer
+{token}` em toda chamada autenticada.
 
-Senhas são armazenadas com hash bcrypt (`BCrypt.Net-Next`). **Nunca reutilize a `SecretKey`
-de exemplo do `appsettings.json` em produção.**
+Quando a API responde 401, o front tenta renovar o access token automaticamente via
+`POST /api/auth/refresh` e refaz a chamada original — o usuário não percebe a renovação.
+A renovação usa **rotação**: o refresh token usado é revogado e um novo par é emitido junto,
+então se um token roubado for usado depois do legítimo, a sessão já foi invalidada. Chamadas
+simultâneas que tomam 401 ao mesmo tempo compartilham a mesma renovação (não disparam várias
+em paralelo). `POST /api/auth/logout` revoga o refresh token explicitamente.
+
+O login tem rate limit: **5 tentativas por minuto por IP** (`429 Too Many Requests` acima
+disso). Senhas são armazenadas com hash bcrypt (`BCrypt.Net-Next`). **Nunca reutilize a
+`SecretKey` de exemplo do `appsettings.json` em produção.**
 
 ## Relatórios
 
@@ -118,17 +138,18 @@ repositórios de escrita, já que são projeções agregadas que não pertencem 
 
 ## Usuários e Permissões
 
-- `GET/POST /api/perfis` e `GET/POST /api/usuarios` — restritos a usuários com perfil
+- `GET/POST/PUT/DELETE /api/perfis` e `/api/usuarios` — restritos a usuários com perfil
   `Administrador` (`[Authorize(Roles = "Administrador")]`, RN07). O front também esconde
   os menus "Usuários" e "Perfis" e bloqueia a rota (`AdminRoute`) para quem não é admin —
   mas a garantia de verdade é sempre a do backend.
-- `POST /api/auth/alterar-senha` — qualquer usuário logado troca a própria senha (exige a
-  senha atual).
+- `POST /api/usuarios/{id}/resetar-senha` — Administrador redefine a senha de outro usuário
+  sem precisar saber a senha atual (diferente de `POST /api/auth/alterar-senha`, que qualquer
+  usuário logado usa pra trocar a própria senha, exigindo a senha atual).
+- Excluir um usuário é bloqueado se ele já registrou alguma movimentação de estoque —
+  protege o log auditável (RN02): a movimentação continua existindo, mas o autor dela não
+  pode ser apagado do sistema.
 - O token JWT carrega `role` e `name` como claims curtas (não as URIs longas de
   `ClaimTypes.*`), pra facilitar decodificar no front (`src/lib/jwt.ts`).
-
-> Sessões (tokens) emitidas antes dessa mudança não têm o claim `role` no formato novo —
-> se estiver testando, faça login de novo após atualizar o backend.
 
 ## Regras de negócio implementadas
 
@@ -142,6 +163,7 @@ repositórios de escrita, já que são projeções agregadas que não pertencem 
 - **RN08** — transferência debita origem e credita destino na mesma transação (`IUnitOfWork`).
 
 Notas de implementação:
+
 - **Pedidos de Recebimento**: a inserção de pedido+itens é atômica (transação local no
   repositório). Já a confirmação de item (entrada em estoque + atualização do pedido) é
   executada em passos sequenciais, não em uma única transação distribuída — suficiente para
@@ -150,33 +172,67 @@ Notas de implementação:
   `MovimentacaoService` porque precisa de uma única transação cobrindo múltiplos itens
   (RN06). Os detalhes estão comentados no `PedidoExpedicaoService`.
 
+## Ajuste de Estoque, Categorias, Editar/Excluir e Cancelar
+
+- `POST /api/movimentacoes/ajuste` — corrige o saldo de um produto numa localização para o
+  valor exatamente contado numa conferência física (não é um delta como entrada/saída): a
+  API calcula a diferença contra o saldo atual, credita ou debita conforme o sinal, e
+  registra uma `MovimentacaoEstoque` com `Tipo=Ajuste` (e `Motivo` opcional) para manter o
+  histórico auditável.
+- `GET/POST/PUT/DELETE /api/categorias` — CRUD completo; excluir é bloqueado se houver
+  produto associado à categoria.
+- Produtos, Categorias, Fornecedores, Clientes, Armazéns e Localizações têm `PUT` (editar) e
+  `DELETE` (excluir) na API. Antes de excluir, cada endpoint verifica se o registro está
+  referenciado em outra tabela (estoque, movimentações, itens de pedido, pedidos) e bloqueia
+  com uma mensagem clara em vez de deixar estourar um erro de FK constraint. Produto não
+  permite editar o SKU; Localização não permite trocar de Armazém (crie uma nova localização
+  nesse caso).
+- Pedidos de Recebimento e Expedição podem ser cancelados (`POST {id}/cancelar`) enquanto
+  não estiverem `Concluido` ou já `Cancelado`.
+
+## Paginação e Diálogos in-app
+
+Produtos e as duas listas de Pedidos usam paginação Anterior/Próxima
+(`components/ui/Pagination.tsx`). Como a API não retorna contagem total de registros, o
+front busca um item a mais que o tamanho da página só para saber se existe próxima.
+
+Confirmações e exclusões usam um diálogo in-app (`DialogContext` / `useDialog`) no lugar do
+`window.confirm`/`window.prompt` nativo do navegador — mais consistente com o resto do
+visual. Ações de sucesso mostram um toast (`ToastContext` / `useToast`) no canto da tela por
+alguns segundos, em vez de um alerta fixo na página.
+
+## Observabilidade, Segurança e Testes de Integração
+
+- **Health check**: `GET /health` (sem autenticação) testa a conectividade real com o banco
+  (abre uma conexão e roda `SELECT 1`) — útil pra saber se a API está "viva de verdade", não
+  só se o processo está de pé.
+- **Rate limit**: login limitado a 5 tentativas por minuto por IP (`429 Too Many Requests`
+  acima disso), mitigando força bruta de senha.
+- **Logging estruturado** via Serilog: console + arquivo com rotação diária (`logs/`, fora do
+  controle de versão), registrando método/path/status/duração de cada requisição
+  (configurável em `appsettings.json`, seção `Serilog`).
+- **Testes de integração** (`GestaoArmazem.IntegrationTests`) usam a mesma instância de SQL
+  Server local do resto do projeto — sem Docker. Criam um banco `GestaoArmazem_IntegrationTests`,
+  aplicam os scripts via DbUp, testam a API ponta a ponta por HTTP, e apagam o banco no final
+  (inclusive limpando de uma execução anterior interrompida). Por padrão conectam em
+  `.\SQLEXPRESS`; se sua instância tiver outro nome, veja
+  `tests/GestaoArmazem.IntegrationTests/README.md` para configurar via variável de ambiente.
+
+Diferente dos testes unitários — que mockam os repositórios e nunca tocam SQL de verdade —
+os testes de integração pegam bugs de SQL real. Foi assim que um bug de ordem de colunas no
+relatório de estoque baixo passou despercebido pelos testes unitários do back-end.
+
 ## Testes
 
-**Back-end** (`GestaoArmazem.Application.Tests`, xUnit + Moq): testes unitários das regras
-de negócio, mockando os repositórios — não tocam banco de dados real. Cobrem RN01, RN05,
-RN06, RN08 e a lógica de autenticação/usuários.
+**Back-end**: unitários (`GestaoArmazem.Application.Tests`, xUnit + Moq) cobrindo as regras
+de negócio críticas com os repositórios mockados; integração (`GestaoArmazem.IntegrationTests`)
+contra SQL Server real, ver seção acima.
 
-**Front-end** (Vitest + Testing Library, configurado em `Front/vite.config.ts`): cobre a
-lógica onde um bug passaria despercebido silenciosamente — decodificação do JWT
-(`lib/jwt.ts`), formatação de localização entre armazéns diferentes (`lib/localizacao.ts`),
-o client HTTP e tratamento de erro da API (`api/client.ts`), o `AuthContext` (login/logout/
-`isAdmin`), e os componentes de UI base.
-
-> Nenhum dos dois lados tem testes de integração validados neste ambiente — os testes
-> unitários mockam suas dependências (repositórios no back-end, `fetch` no front-end) e por
-> isso não pegam, por exemplo, erros de SQL. Foi assim que um bug de ordem de colunas no
-> relatório de estoque baixo passou despercebido pelos testes unitários do back-end.
-
-## Editar, Excluir e Cancelar
-
-Produtos, Fornecedores, Clientes, Armazéns e Localizações têm `PUT` (editar) e `DELETE`
-(excluir) na API. Antes de excluir, cada endpoint verifica se o registro está referenciado
-em outra tabela (estoque, movimentações, itens de pedido, pedidos) e bloqueia com uma
-mensagem clara em vez de deixar estourar um erro de FK constraint. Produto não permite
-editar o SKU; Localização não permite trocar de Armazém (crie uma nova localização nesse caso).
-
-Pedidos de Recebimento e Expedição podem ser cancelados (`POST {id}/cancelar`) enquanto
-não estiverem `Concluido` ou já `Cancelado`.
+**Front-end** (Vitest + Testing Library, configurado em `Front/vite.config.ts`): cobre toda
+página e componente da aplicação — autenticação, permissões (`isAdmin`, `AdminRoute`,
+`Sidebar`), decodificação do JWT, formatação de localização entre armazéns diferentes,
+paginação, diálogos in-app, e os fluxos de negócio mais delicados (confirmação de recebimento
+item a item, expedição tudo-ou-nada).
 
 ## Design do front-end
 
@@ -193,17 +249,23 @@ Tailwind v4):
 
 ## Status
 
-**Back-end**: núcleo funcional completo — Produtos, Estoque, Movimentações (entrada, saída,
-transferência), Autenticação, Pedidos de Recebimento e Pedidos de Expedição, ponta a ponta
-(Domain → Application → Infrastructure → API), com testes unitários (xUnit + Moq) das regras
-de negócio críticas. Schema do banco aplicado automaticamente via DbUp.
+**Back-end**: núcleo funcional completo — Produtos, Categorias, Armazéns, Localizações,
+Estoque, Movimentações (entrada, saída, transferência, ajuste), Autenticação (login, refresh
+token, logout, rate limit), Fornecedores, Clientes, Pedidos de Recebimento e Expedição
+(incluindo cancelamento), Usuários e Perfis (com edição/exclusão e reset de senha),
+Relatórios, editar/excluir com checagem de dependências, health check e logging estruturado —
+ponta a ponta (Domain → Application → Infrastructure → API), com testes unitários das regras
+de negócio críticas e testes de integração contra SQL Server real. Schema do banco aplicado
+automaticamente via DbUp.
 
-**Front-end**: cobre todo o núcleo do backend — Login, Dashboard (visão geral), Produtos,
-Armazéns, Localizações, Estoque, Movimentações, Fornecedores, Clientes, Pedidos de Recebimento,
-Pedidos de Expedição, Relatórios, Usuários e Perfis (RN07: só Administrador acessa), e troca
-de senha (qualquer usuário logado). Suporta múltiplos armazéns: toda tela que mostra ou
-seleciona uma localização exibe também o nome do armazém, já que o código de uma localização
-só é único dentro do próprio armazém. Produtos, Fornecedores, Clientes, Armazéns e Localizações
-têm edição e exclusão (com checagem de dependências antes de excluir); Pedidos de Recebimento
-e Expedição podem ser cancelados enquanto não estiverem concluídos. 39 testes unitários
-(Vitest + Testing Library) cobrindo autenticação, permissões e componentes base.
+**Front-end**: cobre todo o núcleo do backend — Login (com renovação automática de sessão),
+Dashboard, Produtos, Categorias, Armazéns, Localizações, Estoque, Movimentações (incluindo
+Ajuste), Fornecedores, Clientes, Pedidos de Recebimento, Pedidos de Expedição (ambos com
+paginação), Relatórios, Usuários e Perfis (RN07: só Administrador acessa, com edição/exclusão/
+reset de senha), e troca de senha (qualquer usuário logado). Suporta múltiplos armazéns: toda
+tela que mostra ou seleciona uma localização exibe também o nome do armazém, já que o código
+de uma localização só é único dentro do próprio armazém. Produtos, Categorias, Fornecedores,
+Clientes, Armazéns, Localizações e Usuários têm edição e exclusão. Pedidos podem ser
+cancelados enquanto não estiverem concluídos. Confirmações e exclusões usam diálogos in-app
+(não `window.confirm`), com feedback via toast. 177 testes automatizados (Vitest + Testing
+Library) cobrindo toda página e componente da aplicação.
