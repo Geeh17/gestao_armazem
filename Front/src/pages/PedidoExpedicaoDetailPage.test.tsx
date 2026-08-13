@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { PedidoExpedicaoDetailPage } from "./PedidoExpedicaoDetailPage";
 import { AuthProvider } from "@/context/AuthContext";
+import { ToastProvider } from "@/context/ToastContext";
+import { DialogProvider } from "@/context/DialogContext";
 import { setToken, ApiError } from "@/api/client";
 import { montarTokenFake } from "@/test/token";
 import * as pedidosApi from "@/api/pedidosExpedicao";
@@ -51,11 +53,15 @@ function renderPagina() {
   setToken(montarTokenFake({ sub: "usuario-1", role: "Gestor de Estoque" }));
   return render(
     <AuthProvider>
-      <MemoryRouter initialEntries={["/pedidos-expedicao/pedido-1"]}>
-        <Routes>
-          <Route path="/pedidos-expedicao/:id" element={<PedidoExpedicaoDetailPage />} />
-        </Routes>
-      </MemoryRouter>
+      <ToastProvider>
+        <DialogProvider>
+          <MemoryRouter initialEntries={["/pedidos-expedicao/pedido-1"]}>
+            <Routes>
+              <Route path="/pedidos-expedicao/:id" element={<PedidoExpedicaoDetailPage />} />
+            </Routes>
+          </MemoryRouter>
+        </DialogProvider>
+      </ToastProvider>
     </AuthProvider>,
   );
 }
@@ -121,12 +127,13 @@ describe("PedidoExpedicaoDetailPage", () => {
   it("cancela o pedido após confirmação do usuário", async () => {
     mockarDependencias(pedidoBase());
     vi.spyOn(pedidosApi, "cancelarPedidoExpedicao").mockResolvedValue(undefined);
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     const usuario = userEvent.setup();
     renderPagina();
 
     await screen.findByText("Cliente A");
     await usuario.click(screen.getByRole("button", { name: "Cancelar pedido" }));
+    const dialogo = await screen.findByRole("dialog");
+    await usuario.click(within(dialogo).getByRole("button", { name: "Cancelar pedido" }));
 
     await waitFor(() => expect(pedidosApi.cancelarPedidoExpedicao).toHaveBeenCalledWith("pedido-1"));
     expect(await screen.findByText("Pedido cancelado.")).toBeInTheDocument();

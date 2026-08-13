@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { PedidosExpedicaoListPage } from "./PedidosExpedicaoListPage";
 import * as pedidosApi from "@/api/pedidosExpedicao";
@@ -52,5 +53,19 @@ describe("PedidosExpedicaoListPage", () => {
 
     const link = await screen.findByRole("link", { name: "Ver detalhes" });
     expect(link).toHaveAttribute("href", "/pedidos-expedicao/pedido-1");
+  });
+
+  it("clicar em 'Próxima' busca a página seguinte", async () => {
+    const listarSpy = vi.spyOn(pedidosApi, "listarPedidosExpedicao").mockResolvedValue(
+      Array.from({ length: 21 }, (_, i) => ({ ...pedidos[0], id: `pedido-${i}` })),
+    );
+    vi.spyOn(clientesApi, "listarClientes").mockResolvedValue(clientes);
+    const usuario = userEvent.setup();
+    renderPagina();
+
+    await screen.findByText("Página 1");
+    await usuario.click(screen.getByRole("button", { name: "Próxima" }));
+
+    await waitFor(() => expect(listarSpy).toHaveBeenLastCalledWith(2, 21));
   });
 });

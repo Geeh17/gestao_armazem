@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { PedidoRecebimentoDetailPage } from "./PedidoRecebimentoDetailPage";
 import { AuthProvider } from "@/context/AuthContext";
+import { ToastProvider } from "@/context/ToastContext";
+import { DialogProvider } from "@/context/DialogContext";
 import { setToken, ApiError } from "@/api/client";
 import { montarTokenFake } from "@/test/token";
 import * as pedidosApi from "@/api/pedidosRecebimento";
@@ -47,11 +49,15 @@ function renderPagina() {
   setToken(montarTokenFake({ sub: "usuario-1", role: "Gestor de Estoque" }));
   return render(
     <AuthProvider>
-      <MemoryRouter initialEntries={["/pedidos-recebimento/pedido-1"]}>
-        <Routes>
-          <Route path="/pedidos-recebimento/:id" element={<PedidoRecebimentoDetailPage />} />
-        </Routes>
-      </MemoryRouter>
+      <ToastProvider>
+        <DialogProvider>
+          <MemoryRouter initialEntries={["/pedidos-recebimento/pedido-1"]}>
+            <Routes>
+              <Route path="/pedidos-recebimento/:id" element={<PedidoRecebimentoDetailPage />} />
+            </Routes>
+          </MemoryRouter>
+        </DialogProvider>
+      </ToastProvider>
     </AuthProvider>,
   );
 }
@@ -124,26 +130,28 @@ describe("PedidoRecebimentoDetailPage", () => {
   it("cancela o pedido após confirmação do usuário", async () => {
     mockarDependencias(pedidoBase());
     vi.spyOn(pedidosApi, "cancelarPedidoRecebimento").mockResolvedValue(undefined);
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     const usuario = userEvent.setup();
     renderPagina();
 
     await screen.findByText("Fornecedor A");
     await usuario.click(screen.getByRole("button", { name: "Cancelar pedido" }));
+    const dialogo = await screen.findByRole("dialog");
+    await usuario.click(within(dialogo).getByRole("button", { name: "Cancelar pedido" }));
 
     await waitFor(() => expect(pedidosApi.cancelarPedidoRecebimento).toHaveBeenCalledWith("pedido-1"));
     expect(await screen.findByText("Pedido cancelado.")).toBeInTheDocument();
   });
 
-  it("não cancela se o usuário não confirmar no window.confirm", async () => {
+  it("não cancela se o usuário recusar a confirmação no diálogo", async () => {
     mockarDependencias(pedidoBase());
     const cancelarSpy = vi.spyOn(pedidosApi, "cancelarPedidoRecebimento");
-    vi.spyOn(window, "confirm").mockReturnValue(false);
     const usuario = userEvent.setup();
     renderPagina();
 
     await screen.findByText("Fornecedor A");
     await usuario.click(screen.getByRole("button", { name: "Cancelar pedido" }));
+    const dialogo = await screen.findByRole("dialog");
+    await usuario.click(within(dialogo).getByRole("button", { name: "Cancelar" }));
 
     expect(cancelarSpy).not.toHaveBeenCalled();
   });

@@ -2,31 +2,50 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { excluirProduto, listarProdutos } from "@/api/produtos";
 import { ApiError } from "@/api/client";
+import { useDialog } from "@/context/DialogContext";
+import { useToast } from "@/context/ToastContext";
 import type { Produto } from "@/types/produto";
 import { Alert } from "@/components/ui/Alert";
+import { Pagination } from "@/components/ui/Pagination";
+
+const TAMANHO_PAGINA = 20;
 
 export function ProdutosListPage() {
+  const { confirmar } = useDialog();
+  const { mostrarToast } = useToast();
   const [produtos, setProdutos] = useState<Produto[] | null>(null);
+  const [pagina, setPagina] = useState(1);
+  const [temProximaPagina, setTemProximaPagina] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [excluindoId, setExcluindoId] = useState<string | null>(null);
 
   function carregar() {
-    listarProdutos()
-      .then(setProdutos)
+    // Busca um item a mais que o tamanho da página só para saber se existe
+    // próxima página — a API não retorna contagem total de registros.
+    listarProdutos(pagina, TAMANHO_PAGINA + 1)
+      .then((dados) => {
+        setTemProximaPagina(dados.length > TAMANHO_PAGINA);
+        setProdutos(dados.slice(0, TAMANHO_PAGINA));
+      })
       .catch((err) => setErro(err instanceof ApiError ? err.message : "Não foi possível carregar os produtos."));
   }
 
-  useEffect(carregar, []);
+  useEffect(carregar, [pagina]);
 
   async function handleExcluir(produto: Produto) {
-    if (!window.confirm(`Excluir o produto "${produto.nome}"? Essa ação não pode ser desfeita.`)) {
-      return;
-    }
+    const confirmado = await confirmar({
+      titulo: "Excluir produto",
+      mensagem: `Excluir o produto "${produto.nome}"? Essa ação não pode ser desfeita.`,
+      confirmarLabel: "Excluir",
+      variantePerigo: true,
+    });
+    if (!confirmado) return;
 
     setErro(null);
     setExcluindoId(produto.id);
     try {
       await excluirProduto(produto.id);
+      mostrarToast("Produto excluído.");
       carregar();
     } catch (err) {
       setErro(err instanceof ApiError ? err.message : "Não foi possível excluir o produto.");
@@ -107,6 +126,14 @@ export function ProdutosListPage() {
             </tbody>
           </table>
         </div>
+      )}
+      {produtos !== null && produtos.length > 0 && (
+        <Pagination
+          pagina={pagina}
+          temProximaPagina={temProximaPagina}
+          onPaginaAnterior={() => setPagina((p) => Math.max(1, p - 1))}
+          onProximaPagina={() => setPagina((p) => p + 1)}
+        />
       )}
     </div>
   );

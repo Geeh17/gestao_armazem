@@ -7,6 +7,8 @@ import { listarLocalizacoes, type Localizacao } from "@/api/localizacoes";
 import { listarArmazens, type Armazem } from "@/api/armazens";
 import { ApiError } from "@/api/client";
 import { useAuth } from "@/context/AuthContext";
+import { useDialog } from "@/context/DialogContext";
+import { useToast } from "@/context/ToastContext";
 import type { Produto } from "@/types/produto";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
@@ -16,6 +18,8 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 export function PedidoExpedicaoDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { usuarioId } = useAuth();
+  const { confirmar } = useDialog();
+  const { mostrarToast } = useToast();
 
   const [pedido, setPedido] = useState<PedidoExpedicao | null>(null);
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -24,7 +28,6 @@ export function PedidoExpedicaoDetailPage() {
   const [armazens, setArmazens] = useState<Armazem[]>([]);
   const [localizacaoPorItem, setLocalizacaoPorItem] = useState<Record<string, string>>({});
   const [erro, setErro] = useState<string | null>(null);
-  const [sucesso, setSucesso] = useState<string | null>(null);
   const [expedindo, setExpedindo] = useState(false);
   const [cancelando, setCancelando] = useState(false);
 
@@ -77,7 +80,6 @@ export function PedidoExpedicaoDetailPage() {
     }
 
     setErro(null);
-    setSucesso(null);
     setExpedindo(true);
 
     try {
@@ -88,7 +90,7 @@ export function PedidoExpedicaoDetailPage() {
         })),
         usuarioId,
       });
-      setSucesso("Pedido expedido com sucesso.");
+      mostrarToast("Pedido expedido com sucesso.");
       carregarPedido();
     } catch (err) {
       setErro(
@@ -103,14 +105,19 @@ export function PedidoExpedicaoDetailPage() {
 
   async function handleCancelar() {
     if (!pedido) return;
-    if (!window.confirm("Cancelar este pedido de expedição? Essa ação não pode ser desfeita.")) return;
+    const confirmado = await confirmar({
+      titulo: "Cancelar pedido",
+      mensagem: "Cancelar este pedido de expedição? Essa ação não pode ser desfeita.",
+      confirmarLabel: "Cancelar pedido",
+      variantePerigo: true,
+    });
+    if (!confirmado) return;
 
     setErro(null);
-    setSucesso(null);
     setCancelando(true);
     try {
       await cancelarPedidoExpedicao(pedido.id);
-      setSucesso("Pedido cancelado.");
+      mostrarToast("Pedido cancelado.");
       carregarPedido();
     } catch (err) {
       setErro(err instanceof ApiError ? err.message : "Não foi possível cancelar o pedido.");
@@ -147,7 +154,6 @@ export function PedidoExpedicaoDetailPage() {
       </div>
 
       {erro && <Alert>{erro}</Alert>}
-      {sucesso && <Alert variant="success">{sucesso}</Alert>}
 
       {!pedidoEncerrado && (
         <Alert variant="success">

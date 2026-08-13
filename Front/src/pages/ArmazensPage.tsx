@@ -7,11 +7,15 @@ import {
   type Armazem,
 } from "@/api/armazens";
 import { ApiError } from "@/api/client";
+import { useDialog } from "@/context/DialogContext";
+import { useToast } from "@/context/ToastContext";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 
 export function ArmazensPage() {
+  const { confirmar } = useDialog();
+  const { mostrarToast } = useToast();
   const [armazens, setArmazens] = useState<Armazem[]>([]);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [nome, setNome] = useState("");
@@ -53,6 +57,7 @@ export function ArmazensPage() {
       } else {
         await criarArmazem(dto);
       }
+      mostrarToast(editandoId ? "Armazém atualizado." : "Armazém cadastrado.");
       limparFormulario();
       carregar();
     } catch (err) {
@@ -63,13 +68,20 @@ export function ArmazensPage() {
   }
 
   async function handleExcluir(armazem: Armazem) {
-    if (!window.confirm(`Excluir o armazém "${armazem.nome}"?`)) return;
+    const confirmado = await confirmar({
+      titulo: "Excluir armazém",
+      mensagem: `Excluir o armazém "${armazem.nome}"?`,
+      confirmarLabel: "Excluir",
+      variantePerigo: true,
+    });
+    if (!confirmado) return;
 
     setErro(null);
     setExcluindoId(armazem.id);
     try {
       await excluirArmazem(armazem.id);
       if (editandoId === armazem.id) limparFormulario();
+      mostrarToast("Armazém excluído.");
       carregar();
     } catch (err) {
       setErro(err instanceof ApiError ? err.message : "Não foi possível excluir o armazém.");

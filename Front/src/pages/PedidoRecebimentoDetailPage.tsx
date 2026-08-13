@@ -12,6 +12,8 @@ import { listarLocalizacoes, type Localizacao } from "@/api/localizacoes";
 import { listarArmazens, type Armazem } from "@/api/armazens";
 import { ApiError } from "@/api/client";
 import { useAuth } from "@/context/AuthContext";
+import { useDialog } from "@/context/DialogContext";
+import { useToast } from "@/context/ToastContext";
 import type { Produto } from "@/types/produto";
 import { Select } from "@/components/ui/Select";
 import { Input } from "@/components/ui/Input";
@@ -22,6 +24,8 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 export function PedidoRecebimentoDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { usuarioId } = useAuth();
+  const { confirmar } = useDialog();
+  const { mostrarToast } = useToast();
 
   const [pedido, setPedido] = useState<PedidoRecebimento | null>(null);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
@@ -29,7 +33,6 @@ export function PedidoRecebimentoDetailPage() {
   const [localizacoes, setLocalizacoes] = useState<Localizacao[]>([]);
   const [armazens, setArmazens] = useState<Armazem[]>([]);
   const [erro, setErro] = useState<string | null>(null);
-  const [sucesso, setSucesso] = useState<string | null>(null);
 
   const [quantidades, setQuantidades] = useState<Record<string, number>>({});
   const [localizacaoPorItem, setLocalizacaoPorItem] = useState<Record<string, string>>({});
@@ -88,7 +91,6 @@ export function PedidoRecebimentoDetailPage() {
     }
 
     setErro(null);
-    setSucesso(null);
     setConfirmandoItemId(itemId);
 
     try {
@@ -97,7 +99,7 @@ export function PedidoRecebimentoDetailPage() {
         localizacaoId,
         usuarioId,
       });
-      setSucesso("Recebimento confirmado e estoque atualizado.");
+      mostrarToast("Recebimento confirmado e estoque atualizado.");
       setQuantidades((atual) => ({ ...atual, [itemId]: 0 }));
       carregarPedido();
     } catch (err) {
@@ -109,14 +111,19 @@ export function PedidoRecebimentoDetailPage() {
 
   async function handleCancelar() {
     if (!pedido) return;
-    if (!window.confirm("Cancelar este pedido de recebimento? Essa ação não pode ser desfeita.")) return;
+    const confirmado = await confirmar({
+      titulo: "Cancelar pedido",
+      mensagem: "Cancelar este pedido de recebimento? Essa ação não pode ser desfeita.",
+      confirmarLabel: "Cancelar pedido",
+      variantePerigo: true,
+    });
+    if (!confirmado) return;
 
     setErro(null);
-    setSucesso(null);
     setCancelando(true);
     try {
       await cancelarPedidoRecebimento(pedido.id);
-      setSucesso("Pedido cancelado.");
+      mostrarToast("Pedido cancelado.");
       carregarPedido();
     } catch (err) {
       setErro(err instanceof ApiError ? err.message : "Não foi possível cancelar o pedido.");
@@ -153,7 +160,6 @@ export function PedidoRecebimentoDetailPage() {
       </div>
 
       {erro && <Alert>{erro}</Alert>}
-      {sucesso && <Alert variant="success">{sucesso}</Alert>}
 
       <div className="overflow-hidden rounded-lg border border-border bg-surface-raised">
         <table className="w-full text-left text-sm">

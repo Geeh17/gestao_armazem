@@ -9,12 +9,17 @@ import {
 } from "@/api/usuarios";
 import { listarPerfis, type Perfil } from "@/api/perfis";
 import { ApiError } from "@/api/client";
+import { useDialog } from "@/context/DialogContext";
+import { useToast } from "@/context/ToastContext";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 
 export function UsuariosPage() {
+  const { confirmar, perguntar } = useDialog();
+  const { mostrarToast } = useToast();
+
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [perfis, setPerfis] = useState<Perfil[]>([]);
 
@@ -25,7 +30,6 @@ export function UsuariosPage() {
   const [perfilId, setPerfilId] = useState("");
 
   const [erro, setErro] = useState<string | null>(null);
-  const [sucesso, setSucesso] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [excluindoId, setExcluindoId] = useState<string | null>(null);
   const [resetandoId, setResetandoId] = useState<string | null>(null);
@@ -55,22 +59,20 @@ export function UsuariosPage() {
     setEmail(usuario.email);
     setPerfilId(usuario.perfilId);
     setErro(null);
-    setSucesso(null);
   }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setErro(null);
-    setSucesso(null);
     setSalvando(true);
 
     try {
       if (editandoId) {
         await atualizarUsuario(editandoId, { nome, email, perfilId });
-        setSucesso("Usuário atualizado.");
+        mostrarToast("Usuário atualizado.");
       } else {
         await criarUsuario({ nome, email, senha, perfilId });
-        setSucesso("Usuário cadastrado.");
+        mostrarToast("Usuário cadastrado.");
       }
       limparFormulario();
       carregar();
@@ -82,14 +84,20 @@ export function UsuariosPage() {
   }
 
   async function handleExcluir(usuario: Usuario) {
-    if (!window.confirm(`Excluir o usuário "${usuario.nome}"?`)) return;
+    const confirmado = await confirmar({
+      titulo: "Excluir usuário",
+      mensagem: `Excluir o usuário "${usuario.nome}"?`,
+      confirmarLabel: "Excluir",
+      variantePerigo: true,
+    });
+    if (!confirmado) return;
 
     setErro(null);
-    setSucesso(null);
     setExcluindoId(usuario.id);
     try {
       await excluirUsuario(usuario.id);
       if (editandoId === usuario.id) limparFormulario();
+      mostrarToast("Usuário excluído.");
       carregar();
     } catch (err) {
       setErro(err instanceof ApiError ? err.message : "Não foi possível excluir o usuário.");
@@ -99,17 +107,20 @@ export function UsuariosPage() {
   }
 
   async function handleResetarSenha(usuario: Usuario) {
-    const novaSenha = window.prompt(
-      `Nova senha provisória para "${usuario.nome}" (mínimo 8 caracteres):`,
-    );
+    const novaSenha = await perguntar({
+      titulo: "Redefinir senha",
+      mensagem: `Nova senha provisória para "${usuario.nome}" (mínimo 8 caracteres).`,
+      label: "Nova senha",
+      tipo: "password",
+      confirmarLabel: "Redefinir",
+    });
     if (!novaSenha) return;
 
     setErro(null);
-    setSucesso(null);
     setResetandoId(usuario.id);
     try {
       await resetarSenhaUsuario(usuario.id, novaSenha);
-      setSucesso(`Senha de ${usuario.nome} redefinida. Informe a nova senha para essa pessoa.`);
+      mostrarToast(`Senha de ${usuario.nome} redefinida. Informe a nova senha para essa pessoa.`);
     } catch (err) {
       setErro(err instanceof ApiError ? err.message : "Não foi possível redefinir a senha.");
     } finally {
@@ -225,7 +236,6 @@ export function UsuariosPage() {
             ))}
           </Select>
           {erro && <Alert>{erro}</Alert>}
-          {sucesso && <Alert variant="success">{sucesso}</Alert>}
           <div className="flex gap-3">
             <Button type="submit" isLoading={salvando}>
               {editandoId ? "Salvar alterações" : "Cadastrar"}

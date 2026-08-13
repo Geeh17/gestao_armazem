@@ -4,20 +4,26 @@ import { listarPedidosExpedicao, type PedidoExpedicao } from "@/api/pedidosExped
 import { listarClientes, type Cliente } from "@/api/clientes";
 import { Alert } from "@/components/ui/Alert";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Pagination } from "@/components/ui/Pagination";
+
+const TAMANHO_PAGINA = 20;
 
 export function PedidosExpedicaoListPage() {
   const [pedidos, setPedidos] = useState<PedidoExpedicao[] | null>(null);
   const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [pagina, setPagina] = useState(1);
+  const [temProximaPagina, setTemProximaPagina] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([listarPedidosExpedicao(), listarClientes()])
+    Promise.all([listarPedidosExpedicao(pagina, TAMANHO_PAGINA + 1), listarClientes()])
       .then(([pedidosData, clientesData]) => {
-        setPedidos(pedidosData);
+        setTemProximaPagina(pedidosData.length > TAMANHO_PAGINA);
+        setPedidos(pedidosData.slice(0, TAMANHO_PAGINA));
         setClientes(clientesData);
       })
       .catch(() => setErro("Não foi possível carregar os pedidos de expedição."));
-  }, []);
+  }, [pagina]);
 
   function nomeCliente(clienteId: string): string {
     return clientes.find((c) => c.id === clienteId)?.nome ?? clienteId;
@@ -82,6 +88,14 @@ export function PedidosExpedicaoListPage() {
             </tbody>
           </table>
         </div>
+      )}
+      {pedidos !== null && pedidos.length > 0 && (
+        <Pagination
+          pagina={pagina}
+          temProximaPagina={temProximaPagina}
+          onPaginaAnterior={() => setPagina((p) => Math.max(1, p - 1))}
+          onProximaPagina={() => setPagina((p) => p + 1)}
+        />
       )}
     </div>
   );

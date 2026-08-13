@@ -4,20 +4,26 @@ import { listarPedidosRecebimento, type PedidoRecebimento } from "@/api/pedidosR
 import { listarFornecedores, type Fornecedor } from "@/api/fornecedores";
 import { Alert } from "@/components/ui/Alert";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Pagination } from "@/components/ui/Pagination";
+
+const TAMANHO_PAGINA = 20;
 
 export function PedidosRecebimentoListPage() {
   const [pedidos, setPedidos] = useState<PedidoRecebimento[] | null>(null);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
+  const [pagina, setPagina] = useState(1);
+  const [temProximaPagina, setTemProximaPagina] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([listarPedidosRecebimento(), listarFornecedores()])
+    Promise.all([listarPedidosRecebimento(pagina, TAMANHO_PAGINA + 1), listarFornecedores()])
       .then(([pedidosData, fornecedoresData]) => {
-        setPedidos(pedidosData);
+        setTemProximaPagina(pedidosData.length > TAMANHO_PAGINA);
+        setPedidos(pedidosData.slice(0, TAMANHO_PAGINA));
         setFornecedores(fornecedoresData);
       })
       .catch(() => setErro("Não foi possível carregar os pedidos de recebimento."));
-  }, []);
+  }, [pagina]);
 
   function nomeFornecedor(fornecedorId: string): string {
     return fornecedores.find((f) => f.id === fornecedorId)?.nome ?? fornecedorId;
@@ -82,6 +88,14 @@ export function PedidosRecebimentoListPage() {
             </tbody>
           </table>
         </div>
+      )}
+      {pedidos !== null && pedidos.length > 0 && (
+        <Pagination
+          pagina={pagina}
+          temProximaPagina={temProximaPagina}
+          onPaginaAnterior={() => setPagina((p) => Math.max(1, p - 1))}
+          onProximaPagina={() => setPagina((p) => p + 1)}
+        />
       )}
     </div>
   );

@@ -7,11 +7,15 @@ import {
   type Categoria,
 } from "@/api/categorias";
 import { ApiError } from "@/api/client";
+import { useDialog } from "@/context/DialogContext";
+import { useToast } from "@/context/ToastContext";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 
 export function CategoriasPage() {
+  const { confirmar } = useDialog();
+  const { mostrarToast } = useToast();
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [nome, setNome] = useState("");
@@ -49,6 +53,7 @@ export function CategoriasPage() {
       } else {
         await criarCategoria({ nome });
       }
+      mostrarToast(editandoId ? "Categoria atualizada." : "Categoria cadastrada.");
       limparFormulario();
       carregar();
     } catch (err) {
@@ -59,13 +64,20 @@ export function CategoriasPage() {
   }
 
   async function handleExcluir(categoria: Categoria) {
-    if (!window.confirm(`Excluir a categoria "${categoria.nome}"?`)) return;
+    const confirmado = await confirmar({
+      titulo: "Excluir categoria",
+      mensagem: `Excluir a categoria "${categoria.nome}"?`,
+      confirmarLabel: "Excluir",
+      variantePerigo: true,
+    });
+    if (!confirmado) return;
 
     setErro(null);
     setExcluindoId(categoria.id);
     try {
       await excluirCategoria(categoria.id);
       if (editandoId === categoria.id) limparFormulario();
+      mostrarToast("Categoria excluída.");
       carregar();
     } catch (err) {
       setErro(err instanceof ApiError ? err.message : "Não foi possível excluir a categoria.");

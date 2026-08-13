@@ -7,11 +7,15 @@ import {
   type Fornecedor,
 } from "@/api/fornecedores";
 import { ApiError } from "@/api/client";
+import { useDialog } from "@/context/DialogContext";
+import { useToast } from "@/context/ToastContext";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 
 export function FornecedoresPage() {
+  const { confirmar } = useDialog();
+  const { mostrarToast } = useToast();
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [nome, setNome] = useState("");
@@ -56,6 +60,7 @@ export function FornecedoresPage() {
       } else {
         await criarFornecedor(dto);
       }
+      mostrarToast(editandoId ? "Fornecedor atualizado." : "Fornecedor cadastrado.");
       limparFormulario();
       carregar();
     } catch (err) {
@@ -66,13 +71,20 @@ export function FornecedoresPage() {
   }
 
   async function handleExcluir(fornecedor: Fornecedor) {
-    if (!window.confirm(`Excluir o fornecedor "${fornecedor.nome}"?`)) return;
+    const confirmado = await confirmar({
+      titulo: "Excluir fornecedor",
+      mensagem: `Excluir o fornecedor "${fornecedor.nome}"?`,
+      confirmarLabel: "Excluir",
+      variantePerigo: true,
+    });
+    if (!confirmado) return;
 
     setErro(null);
     setExcluindoId(fornecedor.id);
     try {
       await excluirFornecedor(fornecedor.id);
       if (editandoId === fornecedor.id) limparFormulario();
+      mostrarToast("Fornecedor excluído.");
       carregar();
     } catch (err) {
       setErro(err instanceof ApiError ? err.message : "Não foi possível excluir o fornecedor.");

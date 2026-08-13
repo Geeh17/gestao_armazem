@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { renderComProviders } from "@/test/providers";
 import { LocalizacoesPage } from "./LocalizacoesPage";
 import * as armazensApi from "@/api/armazens";
 import * as localizacoesApi from "@/api/localizacoes";
@@ -24,14 +25,14 @@ describe("LocalizacoesPage", () => {
   it("mostra aviso para cadastrar um armazém primeiro quando não há nenhum", async () => {
     vi.spyOn(armazensApi, "listarArmazens").mockResolvedValue([]);
     vi.spyOn(localizacoesApi, "listarLocalizacoes").mockResolvedValue([]);
-    render(<LocalizacoesPage />);
+    renderComProviders(<LocalizacoesPage />);
 
     expect(await screen.findByText("Nenhum armazém cadastrado ainda.")).toBeInTheDocument();
   });
 
   it("lista todas as localizações de todos os armazéns por padrão", async () => {
     mockarCarregamento();
-    render(<LocalizacoesPage />);
+    renderComProviders(<LocalizacoesPage />);
 
     expect(await screen.findByText("A1-P1-N1")).toBeInTheDocument();
     expect(screen.getByText("B1-P1-N1")).toBeInTheDocument();
@@ -40,7 +41,7 @@ describe("LocalizacoesPage", () => {
   it("o filtro por armazém restringe a tabela a só esse armazém", async () => {
     mockarCarregamento();
     const usuario = userEvent.setup();
-    render(<LocalizacoesPage />);
+    renderComProviders(<LocalizacoesPage />);
 
     await screen.findByText("A1-P1-N1");
     await usuario.selectOptions(screen.getByLabelText("Filtrar por armazém"), "Armazém Filial");
@@ -52,7 +53,7 @@ describe("LocalizacoesPage", () => {
   it("ao editar, o select de Armazém do formulário fica travado", async () => {
     mockarCarregamento();
     const usuario = userEvent.setup();
-    render(<LocalizacoesPage />);
+    renderComProviders(<LocalizacoesPage />);
 
     await screen.findByText("A1-P1-N1");
     await usuario.click(screen.getAllByRole("button", { name: "Editar" })[0]);
@@ -67,7 +68,7 @@ describe("LocalizacoesPage", () => {
     mockarCarregamento();
     vi.spyOn(localizacoesApi, "atualizarLocalizacao").mockResolvedValue({} as (typeof localizacoes)[0]);
     const usuario = userEvent.setup();
-    render(<LocalizacoesPage />);
+    renderComProviders(<LocalizacoesPage />);
 
     await screen.findByText("A1-P1-N1");
     await usuario.click(screen.getAllByRole("button", { name: "Editar" })[0]);

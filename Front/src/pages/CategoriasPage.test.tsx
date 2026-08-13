@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { renderComProviders } from "@/test/providers";
 import { CategoriasPage } from "./CategoriasPage";
 import * as categoriasApi from "@/api/categorias";
 import { ApiError } from "@/api/client";
@@ -10,14 +11,14 @@ const categorias = [{ id: "cat-1", nome: "Eletrônicos" }];
 describe("CategoriasPage", () => {
   it("lista as categorias carregadas", async () => {
     vi.spyOn(categoriasApi, "listarCategorias").mockResolvedValue(categorias);
-    render(<CategoriasPage />);
+    renderComProviders(<CategoriasPage />);
 
     expect(await screen.findByText("Eletrônicos")).toBeInTheDocument();
   });
 
   it("mostra o estado vazio quando não há categorias", async () => {
     vi.spyOn(categoriasApi, "listarCategorias").mockResolvedValue([]);
-    render(<CategoriasPage />);
+    renderComProviders(<CategoriasPage />);
 
     expect(await screen.findByText("Nenhuma categoria cadastrada ainda.")).toBeInTheDocument();
   });
@@ -26,7 +27,7 @@ describe("CategoriasPage", () => {
     vi.spyOn(categoriasApi, "listarCategorias").mockResolvedValue([]);
     vi.spyOn(categoriasApi, "criarCategoria").mockResolvedValue({ id: "cat-novo", nome: "Embalagens" });
     const usuario = userEvent.setup();
-    render(<CategoriasPage />);
+    renderComProviders(<CategoriasPage />);
 
     await waitFor(() => expect(screen.getByText("Nenhuma categoria cadastrada ainda.")).toBeInTheDocument());
     await usuario.type(screen.getByLabelText("Nome"), "Embalagens");
@@ -40,7 +41,7 @@ describe("CategoriasPage", () => {
     vi.spyOn(categoriasApi, "listarCategorias").mockResolvedValue(categorias);
     vi.spyOn(categoriasApi, "atualizarCategoria").mockResolvedValue({ id: "cat-1", nome: "Eletrônicos e Informática" });
     const usuario = userEvent.setup();
-    render(<CategoriasPage />);
+    renderComProviders(<CategoriasPage />);
 
     await usuario.click(await screen.findByRole("button", { name: "Editar" }));
     expect(screen.getByLabelText("Nome")).toHaveValue("Eletrônicos");
@@ -60,25 +61,27 @@ describe("CategoriasPage", () => {
     vi.spyOn(categoriasApi, "excluirCategoria").mockRejectedValue(
       new ApiError("Esta categoria não pode ser excluída porque já tem produtos associados.", 409),
     );
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     const usuario = userEvent.setup();
-    render(<CategoriasPage />);
+    renderComProviders(<CategoriasPage />);
 
     await usuario.click(await screen.findByRole("button", { name: "Excluir" }));
+    const dialogo = await screen.findByRole("dialog");
+    await usuario.click(within(dialogo).getByRole("button", { name: "Excluir" }));
 
     expect(
       await screen.findByText("Esta categoria não pode ser excluída porque já tem produtos associados."),
     ).toBeInTheDocument();
   });
 
-  it("não exclui se o usuário recusar a confirmação", async () => {
+  it("não exclui se o usuário recusar a confirmação no diálogo", async () => {
     vi.spyOn(categoriasApi, "listarCategorias").mockResolvedValue(categorias);
     const excluirSpy = vi.spyOn(categoriasApi, "excluirCategoria");
-    vi.spyOn(window, "confirm").mockReturnValue(false);
     const usuario = userEvent.setup();
-    render(<CategoriasPage />);
+    renderComProviders(<CategoriasPage />);
 
     await usuario.click(await screen.findByRole("button", { name: "Excluir" }));
+    const dialogo = await screen.findByRole("dialog");
+    await usuario.click(within(dialogo).getByRole("button", { name: "Cancelar" }));
 
     expect(excluirSpy).not.toHaveBeenCalled();
   });

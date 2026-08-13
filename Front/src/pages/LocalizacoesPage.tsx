@@ -8,12 +8,16 @@ import {
   type Localizacao,
 } from "@/api/localizacoes";
 import { ApiError } from "@/api/client";
+import { useDialog } from "@/context/DialogContext";
+import { useToast } from "@/context/ToastContext";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 
 export function LocalizacoesPage() {
+  const { confirmar } = useDialog();
+  const { mostrarToast } = useToast();
   const [armazens, setArmazens] = useState<Armazem[]>([]);
   const [localizacoes, setLocalizacoes] = useState<Localizacao[]>([]);
   const [filtroArmazemId, setFiltroArmazemId] = useState("");
@@ -77,6 +81,7 @@ export function LocalizacoesPage() {
       } else {
         await criarLocalizacao({ armazemId, corredor, prateleira, nivel, codigo });
       }
+      mostrarToast(editandoId ? "Localização atualizada." : "Localização cadastrada.");
       limparFormulario();
       carregar();
     } catch (err) {
@@ -87,13 +92,20 @@ export function LocalizacoesPage() {
   }
 
   async function handleExcluir(localizacao: Localizacao) {
-    if (!window.confirm(`Excluir a localização "${localizacao.codigo}"?`)) return;
+    const confirmado = await confirmar({
+      titulo: "Excluir localização",
+      mensagem: `Excluir a localização "${localizacao.codigo}"?`,
+      confirmarLabel: "Excluir",
+      variantePerigo: true,
+    });
+    if (!confirmado) return;
 
     setErro(null);
     setExcluindoId(localizacao.id);
     try {
       await excluirLocalizacao(localizacao.id);
       if (editandoId === localizacao.id) limparFormulario();
+      mostrarToast("Localização excluída.");
       carregar();
     } catch (err) {
       setErro(err instanceof ApiError ? err.message : "Não foi possível excluir a localização.");

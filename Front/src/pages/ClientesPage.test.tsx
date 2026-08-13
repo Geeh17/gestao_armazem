@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { renderComProviders } from "@/test/providers";
 import { ClientesPage } from "./ClientesPage";
 import * as clientesApi from "@/api/clientes";
 import { ApiError } from "@/api/client";
@@ -10,7 +11,7 @@ const clientes = [{ id: "cliente-1", nome: "Cliente A", documento: "111.111.111-
 describe("ClientesPage", () => {
   it("lista os clientes carregados", async () => {
     vi.spyOn(clientesApi, "listarClientes").mockResolvedValue(clientes);
-    render(<ClientesPage />);
+    renderComProviders(<ClientesPage />);
 
     expect(await screen.findByText("Cliente A")).toBeInTheDocument();
     expect(screen.getByText("111.111.111-11")).toBeInTheDocument();
@@ -20,7 +21,7 @@ describe("ClientesPage", () => {
     vi.spyOn(clientesApi, "listarClientes").mockResolvedValue([]);
     vi.spyOn(clientesApi, "criarCliente").mockResolvedValue({} as (typeof clientes)[0]);
     const usuario = userEvent.setup();
-    render(<ClientesPage />);
+    renderComProviders(<ClientesPage />);
 
     await waitFor(() => expect(screen.getByText("Nenhum cliente cadastrado ainda.")).toBeInTheDocument());
 
@@ -41,7 +42,7 @@ describe("ClientesPage", () => {
     vi.spyOn(clientesApi, "listarClientes").mockResolvedValue(clientes);
     vi.spyOn(clientesApi, "atualizarCliente").mockResolvedValue({} as (typeof clientes)[0]);
     const usuario = userEvent.setup();
-    render(<ClientesPage />);
+    renderComProviders(<ClientesPage />);
 
     await usuario.click(await screen.findByRole("button", { name: "Editar" }));
 
@@ -62,11 +63,12 @@ describe("ClientesPage", () => {
   it("exclui o cliente após confirmação do usuário", async () => {
     vi.spyOn(clientesApi, "listarClientes").mockResolvedValue(clientes);
     vi.spyOn(clientesApi, "excluirCliente").mockResolvedValue(undefined);
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     const usuario = userEvent.setup();
-    render(<ClientesPage />);
+    renderComProviders(<ClientesPage />);
 
     await usuario.click(await screen.findByRole("button", { name: "Excluir" }));
+    const dialogo = await screen.findByRole("dialog");
+    await usuario.click(within(dialogo).getByRole("button", { name: "Excluir" }));
 
     await waitFor(() => expect(clientesApi.excluirCliente).toHaveBeenCalledWith("cliente-1"));
   });
@@ -76,11 +78,12 @@ describe("ClientesPage", () => {
     vi.spyOn(clientesApi, "excluirCliente").mockRejectedValue(
       new ApiError("Este cliente não pode ser excluído porque já tem pedidos associados.", 409),
     );
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     const usuario = userEvent.setup();
-    render(<ClientesPage />);
+    renderComProviders(<ClientesPage />);
 
     await usuario.click(await screen.findByRole("button", { name: "Excluir" }));
+    const dialogo = await screen.findByRole("dialog");
+    await usuario.click(within(dialogo).getByRole("button", { name: "Excluir" }));
 
     expect(
       await screen.findByText("Este cliente não pode ser excluído porque já tem pedidos associados."),

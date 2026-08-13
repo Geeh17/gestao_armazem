@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { renderComProviders } from "@/test/providers";
 import { FornecedoresPage } from "./FornecedoresPage";
 import * as fornecedoresApi from "@/api/fornecedores";
 
@@ -9,7 +10,7 @@ const fornecedores = [{ id: "fornecedor-1", nome: "Fornecedor A", cnpj: "11.111.
 describe("FornecedoresPage", () => {
   it("lista os fornecedores carregados", async () => {
     vi.spyOn(fornecedoresApi, "listarFornecedores").mockResolvedValue(fornecedores);
-    render(<FornecedoresPage />);
+    renderComProviders(<FornecedoresPage />);
 
     expect(await screen.findByText("Fornecedor A")).toBeInTheDocument();
     expect(screen.getByText("11.111.111/0001-11")).toBeInTheDocument();
@@ -19,7 +20,7 @@ describe("FornecedoresPage", () => {
     vi.spyOn(fornecedoresApi, "listarFornecedores").mockResolvedValue([]);
     vi.spyOn(fornecedoresApi, "criarFornecedor").mockResolvedValue({} as (typeof fornecedores)[0]);
     const usuario = userEvent.setup();
-    render(<FornecedoresPage />);
+    renderComProviders(<FornecedoresPage />);
 
     await waitFor(() => expect(screen.getByText("Nenhum fornecedor cadastrado ainda.")).toBeInTheDocument());
     await usuario.type(screen.getByLabelText("Nome"), "Fornecedor Novo");
@@ -37,7 +38,7 @@ describe("FornecedoresPage", () => {
   it("edita um fornecedor existente e depois cancela a edição", async () => {
     vi.spyOn(fornecedoresApi, "listarFornecedores").mockResolvedValue(fornecedores);
     const usuario = userEvent.setup();
-    render(<FornecedoresPage />);
+    renderComProviders(<FornecedoresPage />);
 
     await usuario.click(await screen.findByRole("button", { name: "Editar" }));
     expect(screen.getByRole("heading", { name: "Editar fornecedor" })).toBeInTheDocument();
@@ -51,15 +52,17 @@ describe("FornecedoresPage", () => {
   it("exclui após confirmação e não exclui se o usuário recusar", async () => {
     vi.spyOn(fornecedoresApi, "listarFornecedores").mockResolvedValue(fornecedores);
     const excluirSpy = vi.spyOn(fornecedoresApi, "excluirFornecedor").mockResolvedValue(undefined);
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
     const usuario = userEvent.setup();
-    render(<FornecedoresPage />);
+    renderComProviders(<FornecedoresPage />);
 
     await usuario.click(await screen.findByRole("button", { name: "Excluir" }));
+    let dialogo = await screen.findByRole("dialog");
+    await usuario.click(within(dialogo).getByRole("button", { name: "Cancelar" }));
     expect(excluirSpy).not.toHaveBeenCalled();
 
-    confirmSpy.mockReturnValue(true);
     await usuario.click(screen.getByRole("button", { name: "Excluir" }));
+    dialogo = await screen.findByRole("dialog");
+    await usuario.click(within(dialogo).getByRole("button", { name: "Excluir" }));
     await waitFor(() => expect(excluirSpy).toHaveBeenCalledWith("fornecedor-1"));
   });
 });

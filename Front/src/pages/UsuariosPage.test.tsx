@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { renderComProviders } from "@/test/providers";
 import { UsuariosPage } from "./UsuariosPage";
 import * as usuariosApi from "@/api/usuarios";
 import * as perfisApi from "@/api/perfis";
@@ -19,7 +20,7 @@ describe("UsuariosPage", () => {
   it("mostra aviso para cadastrar um perfil primeiro quando não há nenhum", async () => {
     vi.spyOn(usuariosApi, "listarUsuarios").mockResolvedValue([]);
     vi.spyOn(perfisApi, "listarPerfis").mockResolvedValue([]);
-    render(<UsuariosPage />);
+    renderComProviders(<UsuariosPage />);
 
     expect(await screen.findByText("Nenhum perfil cadastrado ainda.")).toBeInTheDocument();
   });
@@ -27,7 +28,7 @@ describe("UsuariosPage", () => {
   it("lista os usuários com o nome do perfil", async () => {
     vi.spyOn(usuariosApi, "listarUsuarios").mockResolvedValue(usuarios);
     vi.spyOn(perfisApi, "listarPerfis").mockResolvedValue(perfis);
-    render(<UsuariosPage />);
+    renderComProviders(<UsuariosPage />);
 
     expect(await screen.findByText("Ana")).toBeInTheDocument();
     expect(screen.getByText("ana@teste.com")).toBeInTheDocument();
@@ -40,7 +41,7 @@ describe("UsuariosPage", () => {
     vi.spyOn(perfisApi, "listarPerfis").mockResolvedValue(perfis);
     vi.spyOn(usuariosApi, "criarUsuario").mockResolvedValue({} as (typeof usuarios)[0]);
     const usuario = userEvent.setup();
-    render(<UsuariosPage />);
+    renderComProviders(<UsuariosPage />);
 
     await waitFor(() => expect(screen.getByLabelText("Perfil")).toHaveValue("perfil-1"));
 
@@ -66,7 +67,7 @@ describe("UsuariosPage", () => {
       new ApiError("Já existe um usuário cadastrado com este email.", 409),
     );
     const usuario = userEvent.setup();
-    render(<UsuariosPage />);
+    renderComProviders(<UsuariosPage />);
 
     await waitFor(() => expect(screen.getByLabelText("Perfil")).toHaveValue("perfil-1"));
     await usuario.type(screen.getByLabelText("Nome"), "Bruno");
@@ -84,7 +85,7 @@ describe("UsuariosPage", () => {
     vi.spyOn(perfisApi, "listarPerfis").mockResolvedValue(perfis);
     vi.spyOn(usuariosApi, "atualizarUsuario").mockResolvedValue({} as (typeof usuarios)[0]);
     const usuario = userEvent.setup();
-    render(<UsuariosPage />);
+    renderComProviders(<UsuariosPage />);
 
     await usuario.click(await screen.findByRole("button", { name: "Editar" }));
 
@@ -107,11 +108,12 @@ describe("UsuariosPage", () => {
     vi.spyOn(usuariosApi, "listarUsuarios").mockResolvedValue(usuarios);
     vi.spyOn(perfisApi, "listarPerfis").mockResolvedValue(perfis);
     vi.spyOn(usuariosApi, "excluirUsuario").mockResolvedValue(undefined);
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     const usuario = userEvent.setup();
-    render(<UsuariosPage />);
+    renderComProviders(<UsuariosPage />);
 
     await usuario.click(await screen.findByRole("button", { name: "Excluir" }));
+    const dialogo = await screen.findByRole("dialog");
+    await usuario.click(within(dialogo).getByRole("button", { name: "Excluir" }));
 
     await waitFor(() => expect(usuariosApi.excluirUsuario).toHaveBeenCalledWith("usuario-1"));
   });
@@ -122,11 +124,12 @@ describe("UsuariosPage", () => {
     vi.spyOn(usuariosApi, "excluirUsuario").mockRejectedValue(
       new ApiError("Este usuário não pode ser excluído porque já registrou movimentações de estoque.", 409),
     );
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     const usuario = userEvent.setup();
-    render(<UsuariosPage />);
+    renderComProviders(<UsuariosPage />);
 
     await usuario.click(await screen.findByRole("button", { name: "Excluir" }));
+    const dialogo = await screen.findByRole("dialog");
+    await usuario.click(within(dialogo).getByRole("button", { name: "Excluir" }));
 
     expect(
       await screen.findByText(
@@ -135,19 +138,22 @@ describe("UsuariosPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("redefine a senha de um usuário via prompt, sem chamar a API se o prompt for cancelado", async () => {
+  it("redefine a senha de um usuário via diálogo, sem chamar a API se cancelado", async () => {
     vi.spyOn(usuariosApi, "listarUsuarios").mockResolvedValue(usuarios);
     vi.spyOn(perfisApi, "listarPerfis").mockResolvedValue(perfis);
     const resetarSpy = vi.spyOn(usuariosApi, "resetarSenhaUsuario").mockResolvedValue(undefined);
-    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue(null);
     const usuario = userEvent.setup();
-    render(<UsuariosPage />);
+    renderComProviders(<UsuariosPage />);
 
     await usuario.click(await screen.findByRole("button", { name: "Redefinir senha" }));
+    let dialogo = await screen.findByRole("dialog");
+    await usuario.click(within(dialogo).getByRole("button", { name: "Cancelar" }));
     expect(resetarSpy).not.toHaveBeenCalled();
 
-    promptSpy.mockReturnValue("nova-senha-123");
     await usuario.click(screen.getByRole("button", { name: "Redefinir senha" }));
+    dialogo = await screen.findByRole("dialog");
+    await usuario.type(within(dialogo).getByLabelText("Nova senha"), "nova-senha-123");
+    await usuario.click(within(dialogo).getByRole("button", { name: "Redefinir" }));
 
     await waitFor(() =>
       expect(resetarSpy).toHaveBeenCalledWith("usuario-1", "nova-senha-123"),

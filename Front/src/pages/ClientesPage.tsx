@@ -7,11 +7,15 @@ import {
   type Cliente,
 } from "@/api/clientes";
 import { ApiError } from "@/api/client";
+import { useDialog } from "@/context/DialogContext";
+import { useToast } from "@/context/ToastContext";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 
 export function ClientesPage() {
+  const { confirmar } = useDialog();
+  const { mostrarToast } = useToast();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [nome, setNome] = useState("");
@@ -56,6 +60,7 @@ export function ClientesPage() {
       } else {
         await criarCliente(dto);
       }
+      mostrarToast(editandoId ? "Cliente atualizado." : "Cliente cadastrado.");
       limparFormulario();
       carregar();
     } catch (err) {
@@ -66,13 +71,20 @@ export function ClientesPage() {
   }
 
   async function handleExcluir(cliente: Cliente) {
-    if (!window.confirm(`Excluir o cliente "${cliente.nome}"?`)) return;
+    const confirmado = await confirmar({
+      titulo: "Excluir cliente",
+      mensagem: `Excluir o cliente "${cliente.nome}"?`,
+      confirmarLabel: "Excluir",
+      variantePerigo: true,
+    });
+    if (!confirmado) return;
 
     setErro(null);
     setExcluindoId(cliente.id);
     try {
       await excluirCliente(cliente.id);
       if (editandoId === cliente.id) limparFormulario();
+      mostrarToast("Cliente excluído.");
       carregar();
     } catch (err) {
       setErro(err instanceof ApiError ? err.message : "Não foi possível excluir o cliente.");
