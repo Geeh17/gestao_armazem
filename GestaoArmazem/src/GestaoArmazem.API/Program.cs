@@ -23,6 +23,24 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 // Autenticação JWT (RF10)
 var jwtSettings = builder.Configuration.GetSection("Jwt");
+
+// Fail-fast: recusa subir fora de Development se a SecretKey continuar sendo o
+// placeholder do appsettings.json (ou for curta demais). Sem essa checagem, a API
+// subiria "funcionando" com uma chave pública/conhecida, e qualquer um poderia
+// forjar tokens JWT válidos — um erro de configuração silencioso e grave.
+if (!builder.Environment.IsDevelopment())
+{
+    var secretKey = jwtSettings["SecretKey"];
+    const string placeholder = "__SUBSTITUA_POR_UM_SEGREDO_FORTE_EM_PRODUCAO__";
+
+    if (string.IsNullOrWhiteSpace(secretKey) || secretKey == placeholder || secretKey.Length < 32)
+    {
+        throw new InvalidOperationException(
+            "Jwt:SecretKey não está configurada com um valor seguro. Defina uma chave forte " +
+            "(mínimo 32 caracteres, ex.: via variável de ambiente Jwt__SecretKey ou um secret " +
+            "store) antes de subir a API fora do ambiente Development.");
+    }
+}
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -119,7 +137,11 @@ if (app.Environment.IsDevelopment() && builder.Configuration.GetValue("Database:
 {
     var connectionString = builder.Configuration.GetConnectionString("GestaoArmazem")!;
     GestaoArmazem.Database.DatabaseMigrator.EnsureDatabaseCreated(connectionString);
-    GestaoArmazem.Database.DatabaseMigrator.EnsureDatabaseUpToDate(connectionString);
+    // Esse bloco só roda em Development (condição acima) — seed sempre aplicado aqui,
+    // por conveniência local. Fora de Development, ninguém migra automaticamente:
+    // é sempre via CLI manual (GestaoArmazem.Database), que por padrão NÃO aplica
+    // seed a menos que --seed seja passado explicitamente (ver Program.cs de lá).
+    GestaoArmazem.Database.DatabaseMigrator.EnsureDatabaseUpToDate(connectionString, aplicarSeed: true);
 }
 
 if (app.Environment.IsDevelopment())
