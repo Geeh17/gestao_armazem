@@ -5,17 +5,17 @@ pedidos de recebimento/expedição. Full-stack: API em .NET, front-end em React.
 
 ## Stack
 
-| Camada         | Tecnologia                                                                                                 |
-| -------------- | ---------------------------------------------------------------------------------------------------------- |
-| Back-end       | .NET 8 (Web API)                                                                                           |
-| Acesso a dados | Dapper                                                                                                     |
-| Banco de dados | SQL Server                                                                                                 |
-| Migrações      | DbUp (`GestaoArmazem.Database`)                                                                            |
-| Autenticação   | JWT + refresh token (bcrypt para hash de senha)                                                            |
-| Logging        | Serilog (console + arquivo)                                                                                |
-| Testes         | xUnit + Moq (back-end), Vitest + Testing Library (front-end), testes de integração contra SQL Server local |
-| Front-end      | React 19 + TypeScript, Vite 8                                                                              |
-| Estilização    | Tailwind CSS v4                                                                                            |
+| Camada          | Tecnologia                                    |
+|-----------------|------------------------------------------------|
+| Back-end        | .NET 8 (Web API)                               |
+| Acesso a dados  | Dapper                                          |
+| Banco de dados  | SQL Server                                      |
+| Migrações       | DbUp (`GestaoArmazem.Database`)                 |
+| Autenticação    | JWT + refresh token (bcrypt para hash de senha) |
+| Logging         | Serilog (console + arquivo)                     |
+| Testes          | xUnit + Moq (back-end), Vitest + Testing Library (front-end), testes de integração contra SQL Server local |
+| Front-end       | React 19 + TypeScript, Vite 8                   |
+| Estilização     | Tailwind CSS v4                                 |
 
 ## Estrutura do repositório
 
@@ -93,20 +93,17 @@ pedidos de recebimento/expedição. Full-stack: API em .NET, front-end em React.
 ### Rodando os testes
 
 Back-end (unitários — mockam os repositórios, não tocam banco):
-
 ```
 dotnet test GestaoArmazem/tests/GestaoArmazem.Application.Tests
 ```
 
 Back-end (integração — contra SQL Server real, ver seção "Observabilidade, Segurança e
 Testes de Integração"):
-
 ```
 dotnet test GestaoArmazem/tests/GestaoArmazem.IntegrationTests
 ```
 
 Front-end (a partir de `Front/`, com as dependências já instaladas):
-
 ```
 npm test          # roda uma vez e sai (bom para CI)
 npm run test:watch  # fica observando os arquivos
@@ -136,9 +133,20 @@ disso). Senhas são armazenadas com hash bcrypt (`BCrypt.Net-Next`). **Nunca reu
   localizações) está abaixo do estoque mínimo cadastrado.
 - `GET /api/relatorios/movimentacoes` — histórico de movimentações com filtros opcionais
   (`produtoId`, `tipo`, `dataInicio`, `dataFim`, paginação).
+- `GET /api/relatorios/pedidos-recebimento` — pedidos de recebimento com filtros opcionais
+  (`fornecedorId`, `status`, `dataInicio`, `dataFim`, paginação), já com o nome do fornecedor
+  e a quantidade de itens resolvidos no próprio SQL.
+- `GET /api/relatorios/pedidos-expedicao` — o mesmo para pedidos de expedição (`clienteId`
+  no lugar de `fornecedorId`).
 
 Essas consultas ficam num repositório dedicado (`IRelatorioRepository`), separado dos
 repositórios de escrita, já que são projeções agregadas que não pertencem a um único agregado.
+
+**Exportar para Excel**: cada uma das 3 abas de Relatórios (Estoque baixo, Movimentações,
+Pedidos) tem um botão "Exportar Excel" que gera o `.xlsx` **no navegador** a partir dos dados
+já carregados na tela (já filtrados) — sem endpoint dedicado no backend. Usa a lib `xlsx`
+(SheetJS) com import dinâmico: só é baixada quando alguém realmente clica em exportar, não
+pesa no carregamento inicial do app (~425KB à parte do bundle principal).
 
 ## Usuários e Permissões
 
@@ -167,7 +175,6 @@ repositórios de escrita, já que são projeções agregadas que não pertencem 
 - **RN08** — transferência debita origem e credita destino na mesma transação (`IUnitOfWork`).
 
 Notas de implementação:
-
 - **Pedidos de Recebimento**: a inserção de pedido+itens é atômica (transação local no
   repositório). Já a confirmação de item (entrada em estoque + atualização do pedido) é
   executada em passos sequenciais, não em uma única transação distribuída — suficiente para
@@ -256,7 +263,6 @@ ambiente local:
 
 **Unitários** (`GestaoArmazem.Application.Tests`, xUnit + Moq): cobrem as regras de negócio
 críticas com os repositórios mockados — nunca tocam banco de dados real.
-
 ```
 dotnet test GestaoArmazem/tests/GestaoArmazem.Application.Tests
 ```
@@ -264,7 +270,6 @@ dotnet test GestaoArmazem/tests/GestaoArmazem.Application.Tests
 **Integração** (`GestaoArmazem.IntegrationTests`): contra SQL Server real, sem Docker — ver a
 seção "Observabilidade, Segurança e Testes de Integração" acima para detalhes completos
 (o que está coberto, como configurar outra instância, por que isso importa).
-
 ```
 dotnet test GestaoArmazem/tests/GestaoArmazem.IntegrationTests
 ```
@@ -291,7 +296,6 @@ depender de nenhum navegador real). **177 testes em 37 arquivos**, cobrindo:
   tratamento do erro `{ erro: "..." }` do backend.
 
 Rodando (a partir de `Front/`, com as dependências já instaladas):
-
 ```
 npm test           # roda uma vez e sai (bom para CI)
 npm run test:watch # fica observando os arquivos

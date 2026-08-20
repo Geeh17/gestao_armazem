@@ -11,3 +11,21 @@ public record MovimentacaoRelatorioDto(
     string Tipo,
     DateTime Data,
     Guid UsuarioId);
+
+public record PedidoRecebimentoRelatorioDto(
+    Guid Id,
+    Guid FornecedorId,
+    string FornecedorNome,
+    string Status,
+    DateTime DataPrevista,
+    DateTime? DataRecebimento,
+    int QuantidadeItens);
+
+public record PedidoExpedicaoRelatorioDto(
+    Guid Id,
+    Guid ClienteId,
+    string ClienteNome,
+    string Status,
+    DateTime DataPrevista,
+    DateTime? DataExpedicao,
+    int QuantidadeItens);

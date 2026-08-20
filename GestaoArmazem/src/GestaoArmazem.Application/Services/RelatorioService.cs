@@ -36,4 +36,33 @@ public class RelatorioService : IRelatorioService
             m.Id, m.ProdutoId, m.LocalizacaoOrigemId, m.LocalizacaoDestinoId,
             m.Quantidade, m.Tipo.ToString(), m.Data, m.UsuarioId));
     }
+
+    public async Task<IEnumerable<PedidoRecebimentoRelatorioDto>> ListarPedidosRecebimentoAsync(
+        Guid? fornecedorId, string? status, DateTime? dataInicio, DateTime? dataFim, int pagina, int tamanhoPagina)
+    {
+        var statusEnum = ParseStatus(status);
+        var filtro = new FiltroPedidosRecebimento(fornecedorId, statusEnum, dataInicio, dataFim, pagina, tamanhoPagina);
+        var pedidos = await _relatorioRepository.ListarPedidosRecebimentoAsync(filtro);
+
+        return pedidos.Select(p => new PedidoRecebimentoRelatorioDto(
+            p.Id, p.FornecedorId, p.FornecedorNome, p.Status.ToString(),
+            p.DataPrevista, p.DataRecebimento, p.QuantidadeItens));
+    }
+
+    public async Task<IEnumerable<PedidoExpedicaoRelatorioDto>> ListarPedidosExpedicaoAsync(
+        Guid? clienteId, string? status, DateTime? dataInicio, DateTime? dataFim, int pagina, int tamanhoPagina)
+    {
+        var statusEnum = ParseStatus(status);
+        var filtro = new FiltroPedidosExpedicao(clienteId, statusEnum, dataInicio, dataFim, pagina, tamanhoPagina);
+        var pedidos = await _relatorioRepository.ListarPedidosExpedicaoAsync(filtro);
+
+        return pedidos.Select(p => new PedidoExpedicaoRelatorioDto(
+            p.Id, p.ClienteId, p.ClienteNome, p.Status.ToString(),
+            p.DataPrevista, p.DataExpedicao, p.QuantidadeItens));
+    }
+
+    private static StatusPedido? ParseStatus(string? status) =>
+        !string.IsNullOrWhiteSpace(status) && Enum.TryParse<StatusPedido>(status, ignoreCase: true, out var parsed)
+            ? parsed
+            : null;
 }

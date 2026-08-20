@@ -52,4 +52,56 @@ public class RelatorioRepository : IRelatorioRepository
             filtro.TamanhoPagina
         }, _sql.Transaction);
     }
+
+    public Task<IEnumerable<PedidoRecebimentoResumo>> ListarPedidosRecebimentoAsync(FiltroPedidosRecebimento filtro)
+    {
+        const string sql = @"
+            SELECT pr.Id, pr.FornecedorId, f.Nome AS FornecedorNome, pr.Status,
+                   pr.DataPrevista, pr.DataRecebimento,
+                   (SELECT COUNT(*) FROM ItemPedidoRecebimento i WHERE i.PedidoRecebimentoId = pr.Id) AS QuantidadeItens
+            FROM PedidoRecebimento pr
+            JOIN Fornecedor f ON f.Id = pr.FornecedorId
+            WHERE (@FornecedorId IS NULL OR pr.FornecedorId = @FornecedorId)
+              AND (@Status IS NULL OR pr.Status = @Status)
+              AND (@DataInicio IS NULL OR pr.DataPrevista >= @DataInicio)
+              AND (@DataFim IS NULL OR pr.DataPrevista <= @DataFim)
+            ORDER BY pr.DataPrevista DESC
+            OFFSET @Skip ROWS FETCH NEXT @TamanhoPagina ROWS ONLY";
+
+        return _sql.Connection.QueryAsync<PedidoRecebimentoResumo>(sql, new
+        {
+            filtro.FornecedorId,
+            Status = filtro.Status.HasValue ? (byte)filtro.Status.Value : (byte?)null,
+            filtro.DataInicio,
+            filtro.DataFim,
+            Skip = (filtro.Pagina - 1) * filtro.TamanhoPagina,
+            filtro.TamanhoPagina
+        }, _sql.Transaction);
+    }
+
+    public Task<IEnumerable<PedidoExpedicaoResumo>> ListarPedidosExpedicaoAsync(FiltroPedidosExpedicao filtro)
+    {
+        const string sql = @"
+            SELECT pe.Id, pe.ClienteId, c.Nome AS ClienteNome, pe.Status,
+                   pe.DataPrevista, pe.DataExpedicao,
+                   (SELECT COUNT(*) FROM ItemPedidoExpedicao i WHERE i.PedidoExpedicaoId = pe.Id) AS QuantidadeItens
+            FROM PedidoExpedicao pe
+            JOIN Cliente c ON c.Id = pe.ClienteId
+            WHERE (@ClienteId IS NULL OR pe.ClienteId = @ClienteId)
+              AND (@Status IS NULL OR pe.Status = @Status)
+              AND (@DataInicio IS NULL OR pe.DataPrevista >= @DataInicio)
+              AND (@DataFim IS NULL OR pe.DataPrevista <= @DataFim)
+            ORDER BY pe.DataPrevista DESC
+            OFFSET @Skip ROWS FETCH NEXT @TamanhoPagina ROWS ONLY";
+
+        return _sql.Connection.QueryAsync<PedidoExpedicaoResumo>(sql, new
+        {
+            filtro.ClienteId,
+            Status = filtro.Status.HasValue ? (byte)filtro.Status.Value : (byte?)null,
+            filtro.DataInicio,
+            filtro.DataFim,
+            Skip = (filtro.Pagina - 1) * filtro.TamanhoPagina,
+            filtro.TamanhoPagina
+        }, _sql.Transaction);
+    }
 }

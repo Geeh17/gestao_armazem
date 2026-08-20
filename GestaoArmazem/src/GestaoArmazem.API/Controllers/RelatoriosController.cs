@@ -38,4 +38,34 @@ public class RelatoriosController : ControllerBase
             produtoId, tipo, dataInicio, dataFim, pagina, tamanhoPagina);
         return Ok(resultado);
     }
+
+    /// <summary>Pedidos de recebimento, com filtros opcionais (fornecedor, status, período).</summary>
+    [HttpGet("pedidos-recebimento")]
+    public async Task<ActionResult<IEnumerable<PedidoRecebimentoRelatorioDto>>> PedidosRecebimento(
+        [FromQuery] Guid? fornecedorId,
+        [FromQuery] string? status,
+        [FromQuery] DateTime? dataInicio,
+        [FromQuery] DateTime? dataFim,
+        [FromQuery] int pagina = 1,
+        [FromQuery] int tamanhoPagina = 50)
+    {
+        var resultado = await _relatorioService.ListarPedidosRecebimentoAsync(
+            fornecedorId, status, dataInicio, dataFim, pagina, tamanhoPagina);
+        return Ok(resultado);
+    }
+
+    /// <summary>Pedidos de expedição, com filtros opcionais (cliente, status, período).</summary>
+    [HttpGet("pedidos-expedicao")]
+    public async Task<ActionResult<IEnumerable<PedidoExpedicaoRelatorioDto>>> PedidosExpedicao(
+        [FromQuery] Guid? clienteId,
+        [FromQuery] string? status,
+        [FromQuery] DateTime? dataInicio,
+        [FromQuery] DateTime? dataFim,
+        [FromQuery] int pagina = 1,
+        [FromQuery] int tamanhoPagina = 50)
+    {
+        var resultado = await _relatorioService.ListarPedidosExpedicaoAsync(
+            clienteId, status, dataInicio, dataFim, pagina, tamanhoPagina);
+        return Ok(resultado);
+    }
 }

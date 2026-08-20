@@ -60,4 +60,82 @@ public class RelatorioServiceTests
 
         Assert.Null(filtroCapturado?.Tipo);
     }
+
+    [Fact]
+    public async Task ListarPedidosRecebimentoAsync_ComStatusValido_DeveConverterParaEnumNoFiltro()
+    {
+        FiltroPedidosRecebimento? filtroCapturado = null;
+        _relatorioRepository
+            .Setup(r => r.ListarPedidosRecebimentoAsync(It.IsAny<FiltroPedidosRecebimento>()))
+            .Callback<FiltroPedidosRecebimento>(f => filtroCapturado = f)
+            .ReturnsAsync(Array.Empty<PedidoRecebimentoResumo>());
+
+        await _sut.ListarPedidosRecebimentoAsync(null, "Concluido", null, null, 1, 50);
+
+        Assert.Equal(StatusPedido.Concluido, filtroCapturado?.Status);
+    }
+
+    [Fact]
+    public async Task ListarPedidosRecebimentoAsync_DeveMapearFornecedorNomeEQuantidadeItens()
+    {
+        var pedidoId = Guid.NewGuid();
+        var fornecedorId = Guid.NewGuid();
+        _relatorioRepository
+            .Setup(r => r.ListarPedidosRecebimentoAsync(It.IsAny<FiltroPedidosRecebimento>()))
+            .ReturnsAsync(new[]
+            {
+                new PedidoRecebimentoResumo
+                {
+                    Id = pedidoId, FornecedorId = fornecedorId, FornecedorNome = "Fornecedor A",
+                    Status = StatusPedido.Pendente, DataPrevista = DateTime.UtcNow,
+                    DataRecebimento = null, QuantidadeItens = 3
+                }
+            });
+
+        var resultado = (await _sut.ListarPedidosRecebimentoAsync(null, null, null, null, 1, 50)).ToList();
+
+        Assert.Single(resultado);
+        Assert.Equal("Fornecedor A", resultado[0].FornecedorNome);
+        Assert.Equal("Pendente", resultado[0].Status);
+        Assert.Equal(3, resultado[0].QuantidadeItens);
+    }
+
+    [Fact]
+    public async Task ListarPedidosExpedicaoAsync_ComStatusInvalido_DeveIgnorarFiltroDeStatus()
+    {
+        FiltroPedidosExpedicao? filtroCapturado = null;
+        _relatorioRepository
+            .Setup(r => r.ListarPedidosExpedicaoAsync(It.IsAny<FiltroPedidosExpedicao>()))
+            .Callback<FiltroPedidosExpedicao>(f => filtroCapturado = f)
+            .ReturnsAsync(Array.Empty<PedidoExpedicaoResumo>());
+
+        await _sut.ListarPedidosExpedicaoAsync(null, "status-invalido", null, null, 1, 50);
+
+        Assert.Null(filtroCapturado?.Status);
+    }
+
+    [Fact]
+    public async Task ListarPedidosExpedicaoAsync_DeveMapearClienteNomeEQuantidadeItens()
+    {
+        var pedidoId = Guid.NewGuid();
+        var clienteId = Guid.NewGuid();
+        _relatorioRepository
+            .Setup(r => r.ListarPedidosExpedicaoAsync(It.IsAny<FiltroPedidosExpedicao>()))
+            .ReturnsAsync(new[]
+            {
+                new PedidoExpedicaoResumo
+                {
+                    Id = pedidoId, ClienteId = clienteId, ClienteNome = "Cliente A",
+                    Status = StatusPedido.EmAndamento, DataPrevista = DateTime.UtcNow,
+                    DataExpedicao = null, QuantidadeItens = 2
+                }
+            });
+
+        var resultado = (await _sut.ListarPedidosExpedicaoAsync(null, null, null, null, 1, 50)).ToList();
+
+        Assert.Single(resultado);
+        Assert.Equal("Cliente A", resultado[0].ClienteNome);
+        Assert.Equal("EmAndamento", resultado[0].Status);
+        Assert.Equal(2, resultado[0].QuantidadeItens);
+    }
 }
